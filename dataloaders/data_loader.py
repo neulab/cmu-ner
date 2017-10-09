@@ -5,21 +5,24 @@ import os
 
 
 class NER_DataLoader():
-    def __init__(self, args, pretrained_embedding_path=None, use_discrete_feature=False):
+    def __init__(self, args):
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         self.train_path = args.train_path
 
-        self.tag_vocab_path = os.path.join(self.train_path, ".tag_vocab")
-        self.word_vocab_path = os.path.join(self.train_path, ".word_vocab")
-        self.char_vocab_path = os.path.join(self.train_path, ".char_vocab")
+        self.tag_vocab_path = self.train_path + ".tag_vocab"
+        self.word_vocab_path = self.train_path + ".word_vocab"
+        self.char_vocab_path = self.train_path + ".char_vocab"
 
-        self.use_discrete_feature = use_discrete_feature
+        self.pretrained_embedding_path = args.pretrain_emb_path
+        self.use_discrete_feature = args.use_discrete_features
 
         if os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
+            print("Load vocabs from file ....")
             self.tag_to_id = pkl_load(self.tag_vocab_path)
             self.word_to_id = pkl_load(self.word_vocab_path)
             self.char_to_id = pkl_load(self.char_vocab_path)
+            print("Done!")
         else:
             self.tag_to_id, self.word_to_id, self.char_to_id = self.read_file()
             self.word_to_id['<unk>'] = len(self.word_to_id)
@@ -32,8 +35,8 @@ class NER_DataLoader():
 
         self.word_padding_token = 0
 
-        if pretrained_embedding_path is not None:
-            self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(pretrained_embedding_path)
+        if self.use_discrete_feature:
+            self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path)
 
         # for char vocab and word vocab, we reserve id 0 for the eos padding, and len(vocab)-1 for the <unk>
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
@@ -90,13 +93,10 @@ class NER_DataLoader():
         tag_set = set()
         with codecs.open(self.train_path, "r", "utf-8") as fin:
             to_read_line = []
-            num_lines = 0
             for line in fin:
-                num_lines += 1
-                if num_lines % 100 == 0:
-                    print("processed %d lines. " % num_lines)
                 if line.strip() == "":
                     self.read_one_line_set(to_read_line, tag_set, word_set, char_set)
+                    to_read_line = []
                 else:
                     to_read_line.append(line.strip())
         # tag_set = set(tag_list)
@@ -129,14 +129,19 @@ class NER_DataLoader():
                         ner_tag = fields[-1]
                         if self.use_discrete_feature:
                             temp_discrete.append(get_feature_w(word))
-                        temp_sent.append(self.word_to_id[word] if word in self.word_to_id else 0)
+                        temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                         temp_ner.append(self.tag_to_id[ner_tag])
-                        temp_char.append([self.char_to_id[c] if c in self.char_to_id else 0 for c in word])
+                        temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
                     sents.append(temp_sent)
                     char_sents.append(temp_char)
                     tgt_tags.append(temp_ner)
                     discrete_features.append(temp_discrete)
+                    one_sent = []
                 else:
                     one_sent.append(line.strip())
-        self.num_feats = len(discrete_features[0][0])
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
         return sents, char_sents, tgt_tags, discrete_features

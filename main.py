@@ -2,6 +2,8 @@ __author__ = 'chuntingzhou'
 import argparse
 from dataloaders.data_loader import *
 from models.model_builder import *
+import time
+
 
 def evaluate(data_loader, path, model):
     sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path)
@@ -16,11 +18,12 @@ def evaluate(data_loader, path, model):
         tot_acc += acc
     return tot_acc / len(sents)
 
+
 def main(args):
     ner_data_loader = NER_DataLoader(args)
-    print "hhhh"
+
     sents, char_sents, tgt_tags, discrete_features = ner_data_loader.get_data_set(args.train_path)
-    print "data load ends"
+
     epoch = bad_counter = updates = cum_acc = tot_example = 0
     patience = 20
 
@@ -29,7 +32,7 @@ def main(args):
     batch_size = args.batch_size
 
     model = vanilla_NER_CRF_model(args, ner_data_loader)
-    trainer = dy.MomentumSGDTrainer(model, 0.015, 0.9)
+    trainer = dy.MomentumSGDTrainer(model.model, 0.015, 0.9)
 
     valid_history = []
     while epoch <= args.tot_epochs:
@@ -37,7 +40,6 @@ def main(args):
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
             dy.renew_cg()
-            print "hhhhhhh"
             loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
             loss_val = loss.value()
 
@@ -70,9 +72,11 @@ if __name__ == "__main__":
     parser.add_argument("--rnn_type", default="lstm", type=str)
     parser.add_argument("--hidden_dim", default=200, type=int)
     parser.add_argument("--layer", default=1, type=int)
+
     parser.add_argument("--dropout_rate", default=0.5, type=float)
     parser.add_argument("--valid_freq", default=500, type=int)
     parser.add_argument("--tot_epochs", default=100)
+    parser.add_argument("--batch_size", default=10)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
     parser.add_argument("--data_aug", default=False, action="store_true")

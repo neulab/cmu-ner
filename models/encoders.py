@@ -50,7 +50,7 @@ class Lookup_Encoder(Encoder):
         self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
 
     def encode(self, input_seqs):
-        transpose_inputs = transpose_input(input_seqs, self.padding_token)
+        transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
         embs = [dy.lookup_batch(self.lookup_table, wids) for wids in transpose_inputs]
         return embs
 
@@ -142,7 +142,10 @@ class BiRNN_Encoder(Encoder):
                  layer=1,
                  rnn="lstm"):
         Encoder.__init__(self)
-        self.birnn = dy.BiRNNBuilder(layer, input_dim, hidden_dim, model, dy.LSTMBuilder if rnn == "lstm" else dy.GRUBuilder)
+        # self.birnn = dy.BiRNNBuilder(layer, input_dim, hidden_dim, model, dy.LSTMBuilder if rnn == "lstm" else dy.GRUBuilder)
+        self.fwd_RNN = dy.VanillaLSTMBuilder(layer, input_dim, hidden_dim, model) if rnn == "lstm" else dy.GRUBuilder(layer, input_dim, hidden_dim, model)
+        self.bwd_RNN = dy.VanillaLSTMBuilder(layer, input_dim, hidden_dim, model) if rnn == "lstm" else dy.GRUBuilder(layer, input_dim, hidden_dim, model)
+
         self.vocab_size =  vocab_size
         self.padding_token = padding_token
         self.drop_out_rate = dropout_rate
@@ -152,13 +155,16 @@ class BiRNN_Encoder(Encoder):
     def encode(self, input_seqs):
         if self.vocab_size > 0:
             # input_seqs = [[w1, w2],[]]
-            transpose_inputs = transpose_input(input_seqs, self.padding_token)
+            transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
             w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.drop_out_rate) if self.drop_out_rate > 0. else dy.lookup_batch(self.vocab_emb, wids) for wids in transpose_inputs]
         else:
             w_embs = [dy.dropout(emb, self.drop_out_rate) if self.drop_out_rate > 0. else emb for emb in input_seqs]
         # if vocab_size = 0: input_seqs = [(input_dim, batch_size)]
 
-        birnn_outputs = [dy.dropout(emb, self.drop_out_rate) if self.drop_out_rate > 0. else emb for emb in self.birnn.transduce(w_embs)]
+        w_embs_r = w_embs[::-1]
+        # birnn_outputs = [dy.dropout(emb, self.drop_out_rate) if self.drop_out_rate > 0. else emb for emb in self.birnn.transduce(w_embs)]
+        fwd_vectors = self.fwd_RNN.initial_state().transduce(w_embs)
+        bwd_vectors = self.bwd_RNN.initial_state().transduce(w_embs_r)[::-1]
 
-
+        birnn_outputs = [dy.concatenate([fwd_v, bwd_v]) for (fwd_v, bwd_v) in zip(fwd_vectors, bwd_vectors)]
         return birnn_outputs

@@ -24,6 +24,7 @@ class chain_CRF_decoder(Decoder):
         self.start_id = tag_size
         self.end_id = tag_size + 1
         self.tag_size = tag_size + 2
+        tag_size = tag_size + 2
         # optional: transform the hidden space of src encodings into the tag embedding space
         self.W_src2tag_readout = model.add_parameters((tag_emb_dim, src_output_dim))
         self.b_src2tag_readout = model.add_parameters((tag_emb_dim))
@@ -34,7 +35,7 @@ class chain_CRF_decoder(Decoder):
         self.b_scores_readout2tag.zero()
 
         # (to, from), trans[i] is the transition score to i
-        init_transition_matrix = np.random.randn((tag_size, tag_size))
+        init_transition_matrix = np.random.randn(tag_size, tag_size)
         init_transition_matrix[self.start_id, :] = -10000.0
         init_transition_matrix[:, self.end_id] = -10000.0
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),

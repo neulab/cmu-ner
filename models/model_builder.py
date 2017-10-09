@@ -53,6 +53,7 @@ class vanilla_NER_CRF_model(Model):
         else:
             concat_inputs = [dy.concatenate([c, w]) for c, w in zip(char_embs, word_embs)]
         birnn_outputs = self.birnn_encoder.encode(concat_inputs)
+
         return birnn_outputs
 
     def cal_loss(self, sents, char_sents, ner_tags, feats):
