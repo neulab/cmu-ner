@@ -1,3 +1,4 @@
+__author__ = 'chuntingzhou'
 from utils import *
 
 ''' Designing idea: the encoder should be agnostic to the input, it can be either

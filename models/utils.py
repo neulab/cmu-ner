@@ -3,7 +3,7 @@ import dynet as dy
 import numpy as np
 from collections import defaultdict
 import gzip
-
+import cPickle as pkl
 
 def fopen(filename, mode='r'):
     if filename.endswith('.gz'):
@@ -20,6 +20,16 @@ def get_pretrained_emb(path_to_emb):
 def get_feature_w(w):
     return [1, 0]
 
+
+def pkl_dump(obj, path):
+    with open(path, "wb") as fout:
+        pkl.dump(obj, fout)
+
+
+def pkl_load(path):
+    with open(path, "rb") as fin:
+        obj = pkl.load(fin)
+    return obj
 
 def log_sum_exp_dim_0(x):
     # numerically stable log_sum_exp

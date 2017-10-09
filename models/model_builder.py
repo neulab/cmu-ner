@@ -1,3 +1,4 @@
+__author__ = 'chuntingzhou'
 from encoders import *
 from decoders import *
 
@@ -42,7 +43,7 @@ class vanilla_NER_CRF_model(Model):
 
         self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
 
-    def forward(self, sents, char_sents, ner_tags, feats):
+    def forward(self, sents, char_sents, feats):
         char_embs = self.char_cnn_encoder.encode(char_sents)
         word_embs = self.word_lookup.encode(sents)
 
@@ -52,6 +53,14 @@ class vanilla_NER_CRF_model(Model):
         else:
             concat_inputs = [dy.concatenate([c, w]) for c, w in zip(char_embs, word_embs)]
         birnn_outputs = self.birnn_encoder.encode(concat_inputs)
+        return birnn_outputs
 
+    def cal_loss(self, sents, char_sents, ner_tags, feats):
+        birnn_outputs = self.forward(sents, char_sents, feats)
         crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
         return crf_loss
+
+    def eval(self, sents, char_sents, feats):
+        birnn_outputs = self.forward(sents, char_sents, feats)
+        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
+        return best_score, best_path

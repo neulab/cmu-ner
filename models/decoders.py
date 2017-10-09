@@ -1,8 +1,5 @@
 __author__ = 'chuntingzhou'
 from utils import *
-import copy
-
-from mst import mst
 
 
 class Decoder():
