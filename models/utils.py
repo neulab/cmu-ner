@@ -5,6 +5,8 @@ from collections import defaultdict
 import gzip
 import cPickle as pkl
 
+np.random.seed(1)
+
 def fopen(filename, mode='r'):
     if filename.endswith('.gz'):
         return gzip.open(filename, mode)
@@ -74,11 +76,12 @@ def make_bucket_batches(data_collections, batch_size):
     return batches
 
 
-def transpose_input(seq, padding_token):
+def transpose_input(seq, padding_token=0):
     # input seq: list of samples [[w1, w2, ..], [w1, w2, ..]]
     max_len = max([len(sent) for sent in seq])
     seq_pad = []
     seq_mask = []
+    print "max len", max_len
     for i in range(max_len):
         pad_temp = [sent[i] if i < len(sent) else padding_token for sent in seq]
         mask_temp = [1.0 if i < len(sent) else 0.0 for sent in seq]

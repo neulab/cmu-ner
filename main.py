@@ -34,12 +34,22 @@ def main(args):
     model = vanilla_NER_CRF_model(args, ner_data_loader)
     trainer = dy.MomentumSGDTrainer(model.model, 0.015, 0.9)
 
+    def _check_batch_token(batch, id_to_vocab):
+        for line in batch:
+            print [id_to_vocab[i] for i in line]
+
+    def _check_batch_char(batch, id_to_vocab):
+        for line in batch:
+            print [[id_to_vocab[c] for c in w] for w in line]
+
     valid_history = []
     while epoch <= args.tot_epochs:
         epoch += 1
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
             dy.renew_cg()
+
+            _check_batch_token(b_sents, ner_data_loader.id_to_word)
             loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
             loss_val = loss.value()
 

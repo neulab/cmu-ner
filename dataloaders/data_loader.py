@@ -75,7 +75,7 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
-            word_set.add(ner_tag)
+            word_set.add(word)
 
     def get_vocab(self, a_set, shift=0):
         vocab = {}

@@ -65,11 +65,15 @@ class chain_CRF_decoder(Decoder):
 
     def score_one_sequence(self, tag_scores, tags, batch_size):
         ''' tags: list of tag ids at each time step '''
-        tags = [self.start_id] * batch_size + tags  # len(tag_scores) = len(tags) - 1
+        # print tags, batch_size
+        tags = [[self.start_id] * batch_size] + tags  # len(tag_scores) = len(tags) - 1
         score = dy.inputTensor(np.zeros(batch_size), batched=True)
+        tag_scores = dy.concatenate_cols(tag_scores)
+        print tag_scores.dim()
+        print tags
         for i in range(len(tags) - 1):
             score = score + dy.pick_batch(dy.lookup_batch(self.transition_matrix, tags[i + 1]), tags[i]) \
-                    + dy.pick_batch(tag_scores[i], tags[i + 1])
+                    + dy.pick_batch(tag_scores, tags[i + 1])
         score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, [self.end_id] * batch_size), tags[-1])
         return score
 
@@ -82,7 +86,7 @@ class chain_CRF_decoder(Decoder):
         return: average of negative log likelihood
         '''
         # TODO: transpose tgt tags first
-        batch_size = len(tgt_tags[0])
+        batch_size = len(tgt_tags)
         tgt_tags, tgt_mask = transpose_input(tgt_tags, 0)
         W_src2tag_readout = dy.parameter(self.W_src2tag_readout)
         b_src2tag_readout = dy.parameter(self.b_src2tag_readout)
@@ -95,8 +99,11 @@ class chain_CRF_decoder(Decoder):
 
         # scores over all paths, all scores are in log-space
         forward_scores = self.forward_alg(tag_scores, batch_size)
+        print "partition dim: ", forward_scores.dim()
         gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
+        print "gold_score dim: ", gold_score.dim()
         loss = dy.sum_batches(gold_score - forward_scores) / batch_size
+        print "loss dim ", loss.dim()
         return loss
 
     def decoding(self, src_encodings):
