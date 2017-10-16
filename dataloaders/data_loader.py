@@ -2,7 +2,9 @@ __author__ = 'chuntingzhou'
 from models.utils import *
 import codecs
 import os
-
+from models import utils
+import re
+import numpy as np
 
 class NER_DataLoader():
     def __init__(self, args):
@@ -16,31 +18,39 @@ class NER_DataLoader():
         self.pretrained_embedding_path = args.pretrain_emb_path
         self.use_discrete_feature = args.use_discrete_features
 
+
         if os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
             print("Load vocabs from file ....")
-            self.tag_to_id = pkl_load(self.tag_vocab_path)
-            self.word_to_id = pkl_load(self.word_vocab_path)
-            self.char_to_id = pkl_load(self.char_vocab_path)
+            self.tag_to_id = utils.pkl_load(self.tag_vocab_path)
+            self.word_to_id = utils.pkl_load(self.word_vocab_path)
+            self.char_to_id = utils.pkl_load(self.char_vocab_path)
             print("Done!")
         else:
             self.tag_to_id, self.word_to_id, self.char_to_id = self.read_file()
-            self.word_to_id['<unk>'] = len(self.word_to_id)
             self.word_to_id['<eos>'] = 0
-            self.char_to_id['<unk>'] = len(self.char_to_id)
+            self.word_emb=[np.zeros(args.word_emb_dim).astype(float) for word in self.word_to_id]
 
-            pkl_dump(self.tag_to_id, self.tag_vocab_path)
-            pkl_dump(self.char_to_id, self.char_vocab_path)
-            pkl_dump(self.word_to_id, self.word_vocab_path)
+            utils.pkl_dump(self.tag_to_id, self.tag_vocab_path)
+
+            if os.path.exists(self.pretrained_embedding_path) and self.use_discrete_feature:
+                self.word_emb, self.word_to_id, self.char_to_id = utils.get_pretrained_emb(self.pretrained_embedding_path, self.word_to_id, self.char_to_id,self.word_emb)
+
+            self.word_to_id['<unk>'] = len(self.word_to_id)
+            self.word_emb.append(np.zeros(args.word_emb_dim).astype(float))
+            self.char_to_id['<unk>'] = len(self.char_to_id)
+            self.check = self.word_emb[self.word_to_id['the']]
+            utils.pkl_dump(self.char_to_id, self.char_vocab_path)
+            utils.pkl_dump(self.word_to_id, self.word_vocab_path)
 
         self.word_padding_token = 0
 
-        if self.use_discrete_feature:
-            self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path)
 
         # for char vocab and word vocab, we reserve id 0 for the eos padding, and len(vocab)-1 for the <unk>
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
         self.id_to_word = {v: k for k, v in self.word_to_id.iteritems()}
+        self.check = self.word_to_id['the']
+        self.check = self.word_to_id['the']
         self.id_to_char = {v: k for k, v in self.char_to_id.iteritems()}
 
         self.ner_vocab_size = len(self.id_to_tag)
@@ -75,7 +85,7 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
-            word_set.add(ner_tag)
+            word_set.add(word)
 
     def get_vocab(self, a_set, shift=0):
         vocab = {}
@@ -128,7 +138,7 @@ class NER_DataLoader():
                         word = fields[0]
                         ner_tag = fields[-1]
                         if self.use_discrete_feature:
-                            temp_discrete.append(get_feature_w(word))
+                            temp_discrete.append(utils.get_feature_w(word))
                         temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                         temp_ner.append(self.tag_to_id[ner_tag])
                         temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
