@@ -81,7 +81,6 @@ def transpose_input(seq, padding_token=0):
     max_len = max([len(sent) for sent in seq])
     seq_pad = []
     seq_mask = []
-    print "max len", max_len
     for i in range(max_len):
         pad_temp = [sent[i] if i < len(sent) else padding_token for sent in seq]
         mask_temp = [1.0 if i < len(sent) else 0.0 for sent in seq]
@@ -161,3 +160,28 @@ def transpose_char_input(tgt_batch, padding_token):
         sent_w_batch.append(w_batch)
         sent_mask_batch.append(mask_batch)
     return sent_w_batch, sent_mask_batch, max_sent_len, max_w_lens
+
+
+if __name__ == "__main__":
+    from scipy.misc import logsumexp
+    import numpy as np
+
+    # a = np.random.rand(3, 4, 2)
+    # b = logsumexp(a, axis=0)
+    # a_t = dy.inputTensor(a, batched=True)
+    # b_t = log_sum_exp_dim_0(a_t)
+    # print "numpy "
+    # print b
+    # print "dynet "
+    # print b_t.value(), b_t.dim()
+    # print dy.pick_batch_elem(b_t, 1).npvalue()
+
+    a = np.random.rand(3, 2)
+    b = logsumexp(a, axis=0)
+    a_t = dy.inputTensor(a, batched=True)
+    b_t = log_sum_exp_dim_0(a_t)
+    print "numpy "
+    print b
+    print "dynet "
+    print b_t.value(), b_t.dim()
+    print dy.pick_batch_elem(b_t, 1).npvalue()

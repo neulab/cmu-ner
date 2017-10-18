@@ -40,7 +40,7 @@ def main(args):
 
     def _check_batch_char(batch, id_to_vocab):
         for line in batch:
-            print [[id_to_vocab[c] for c in w] for w in line]
+            print [u" ".join([id_to_vocab[c] for c in w]) for w in line]
 
     valid_history = []
     while epoch <= args.tot_epochs:
@@ -49,15 +49,19 @@ def main(args):
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
             dy.renew_cg()
 
-            _check_batch_token(b_sents, ner_data_loader.id_to_word)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
+            # _check_batch_token(b_sents, ner_data_loader.id_to_word)
+            # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
+            # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
+            # print "batch size: ", len(b_sents)
+            loss, sum_s, sent_s = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
             loss_val = loss.value()
 
             updates += 1
             loss.backward()
             trainer.update()
 
-            if display_freq % updates == 0:
+            if updates % display_freq == 0:
+                print("avg sum score = %f, avg sent score = %f" % (sum_s.value(), sent_s.value()))
                 print("Epoch = %d, Updates = %d, CRF Loss=%f." % (epoch, updates, loss_val))
             if updates % valid_freq == 0:
                 pass
@@ -86,7 +90,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout_rate", default=0.5, type=float)
     parser.add_argument("--valid_freq", default=500, type=int)
     parser.add_argument("--tot_epochs", default=100)
-    parser.add_argument("--batch_size", default=10)
+    parser.add_argument("--batch_size", default=1)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
     parser.add_argument("--data_aug", default=False, action="store_true")

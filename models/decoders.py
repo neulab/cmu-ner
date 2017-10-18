@@ -36,8 +36,8 @@ class chain_CRF_decoder(Decoder):
 
         # (to, from), trans[i] is the transition score to i
         init_transition_matrix = np.random.randn(tag_size, tag_size)
-        init_transition_matrix[self.start_id, :] = -10000.0
-        init_transition_matrix[:, self.end_id] = -10000.0
+        # init_transition_matrix[self.start_id, :] = -100.0
+        # init_transition_matrix[:, self.end_id] = -100.0
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
                                                              init=dy.NumpyInitializer(init_transition_matrix))
 
@@ -48,11 +48,12 @@ class chain_CRF_decoder(Decoder):
         transition_score = dy.parameter(self.transition_matrix)
         transpose_transition_score = dy.transpose(transition_score)  # (from, to)
         # alpha(t', s) = the score of sequence from t=0 to t=t' in log space
-        np_init_alphas = -10000.0 * np.ones((self.tag_size, batch_size))
-        np_init_alphas[self.start_id, :] = 0.0
-        alpha_tm1 = dy.inputTensor(np_init_alphas, batched=True)
+        # np_init_alphas = -100.0 * np.ones((self.tag_size, batch_size))
+        # np_init_alphas[self.start_id, :] = 0.0
+        # alpha_tm1 = dy.inputTensor(np_init_alphas, batched=True)
+        alpha_tm1 = transpose_transition_score[self.start_id] + tag_scores[0]
 
-        for tag_score in tag_scores:
+        for tag_score in tag_scores[1:]:
             # extend for each transit <to>
             alpha_tm1 = dy.concatenate_cols([alpha_tm1] * self.tag_size)  # (from, to, batch_size)
             # each column i of tag_score will be the repeated emission score to tag i
@@ -60,21 +61,22 @@ class chain_CRF_decoder(Decoder):
             alpha_t = alpha_tm1 + transpose_transition_score + tag_score
             alpha_tm1 = log_sum_exp_dim_0(alpha_t)  # (tag_size, batch_size)
 
-        terminal_alpha = log_sum_exp_dim_0(alpha_tm1 + transition_score[self.end_id])  # (1, batch_size)
+        terminal_alpha = log_sum_exp_dim_0(alpha_tm1 + self.transition_matrix[self.end_id])  # (1, batch_size)
         return terminal_alpha
 
     def score_one_sequence(self, tag_scores, tags, batch_size):
         ''' tags: list of tag ids at each time step '''
         # print tags, batch_size
+        # print batch_size
+        # print "scoring one sentence"
         tags = [[self.start_id] * batch_size] + tags  # len(tag_scores) = len(tags) - 1
         score = dy.inputTensor(np.zeros(batch_size), batched=True)
-        tag_scores = dy.concatenate_cols(tag_scores)
-        print tag_scores.dim()
-        print tags
+        # tag_scores = dy.concatenate_cols(tag_scores) # tot_tags, sent_len, batch_size
+        # print "tag dim: ", tag_scores.dim()
         for i in range(len(tags) - 1):
-            score = score + dy.pick_batch(dy.lookup_batch(self.transition_matrix, tags[i + 1]), tags[i]) \
-                    + dy.pick_batch(tag_scores, tags[i + 1])
-        score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, [self.end_id] * batch_size), tags[-1])
+            score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, tags[i + 1]), tags[i]) \
+                    + dy.pick_batch(tag_scores[i], tags[i + 1])
+        score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, [self.end_id]*batch_size), tags[-1])
         return score
 
     def decode_loss(self, src_encodings, tgt_tags):
@@ -99,12 +101,10 @@ class chain_CRF_decoder(Decoder):
 
         # scores over all paths, all scores are in log-space
         forward_scores = self.forward_alg(tag_scores, batch_size)
-        print "partition dim: ", forward_scores.dim()
         gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
-        print "gold_score dim: ", gold_score.dim()
-        loss = dy.sum_batches(gold_score - forward_scores) / batch_size
-        print "loss dim ", loss.dim()
-        return loss
+        # negative log likelihood
+        loss = dy.sum_batches(forward_scores - gold_score) / batch_size
+        return loss, dy.sum_batches(forward_scores)/batch_size, dy.sum_batches(gold_score) / batch_size
 
     def decoding(self, src_encodings):
         ''' Viterbi decoding for a single sequence. '''
@@ -118,7 +118,7 @@ class chain_CRF_decoder(Decoder):
         tag_scores = [dy.affine_transform([b_score_tag, W_score_tag, tag_emb]) for tag_emb in tag_embs]
 
         back_trace_tags = []
-        np_init_alpha = np.ones(self.tag_size) * -10000.0
+        np_init_alpha = np.ones(self.tag_size) * -100.0
         np_init_alpha[self.start_id] = 0.0
         max_tm1 = dy.inputTensor(np_init_alpha)
         transition_score = dy.parameter(self.transition_matrix)  # (to, from)
