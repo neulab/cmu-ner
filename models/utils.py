@@ -7,6 +7,66 @@ import cPickle as pkl
 
 np.random.seed(1)
 
+
+def iob2(tags):
+    """
+    Check that tags have a valid IOB format.
+    Tags in IOB1 format are converted to IOB2.
+    """
+    for i, tag in enumerate(tags):
+        if tag == 'O':
+            continue
+        split = tag.split('-')
+        if len(split) != 2 or split[0] not in ['I', 'B']:
+            return False
+        if split[0] == 'B':
+            continue
+        elif i == 0 or tags[i - 1] == 'O':  # conversion IOB1 to IOB2
+            tags[i] = 'B' + tag[1:]
+        elif tags[i - 1][1:] == tag[1:]:
+            continue
+        else:  # conversion IOB1 to IOB2
+            tags[i] = 'B' + tag[1:]
+    return True
+
+
+def get_entity(label):
+    entities = []
+    i = 0
+    while i < len(label):
+        if label[i] != 'O':
+            e_type = label[i][2:]
+            j = i + 1
+            while j < len(label) and label[j] == 'I-' + e_type:
+                j += 1
+            entities.append((i, j, e_type))
+            i = j
+        else:
+            i += 1
+    return entities
+
+
+def evaluate_ner(pred, gold):
+    tp = 0
+    fp = 0
+    fn = 0
+    for i in range(len(pred)):
+        pred_entities = get_entity(pred[i])
+        gold_entities = get_entity(gold[i])
+        temp = 0
+        for entity in pred_entities:
+            if entity in gold_entities:
+                tp += 1
+                temp += 1
+            else:
+                fp += 1
+        fn += len(gold_entities) - temp
+    precision = 1.0 * tp / (tp + fp)
+    recall = 1.0 * tp / (tp + fn)
+    f1 = 2 * precision * recall / (precision + recall)
+    return precision, recall, f1
+
+
 def fopen(filename, mode='r'):
     if filename.endswith('.gz'):
         return gzip.open(filename, mode)
@@ -32,6 +92,7 @@ def pkl_load(path):
     with open(path, "rb") as fin:
         obj = pkl.load(fin)
     return obj
+
 
 def log_sum_exp_dim_0(x):
     # numerically stable log_sum_exp

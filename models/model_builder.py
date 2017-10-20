@@ -58,8 +58,8 @@ class vanilla_NER_CRF_model(Model):
 
     def cal_loss(self, sents, char_sents, ner_tags, feats):
         birnn_outputs = self.forward(sents, char_sents, feats)
-        crf_loss, sum_s, sent_s = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss, sum_s, sent_s
+        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
+        return crf_loss#, sum_s, sent_s
 
     def eval(self, sents, char_sents, feats):
         birnn_outputs = self.forward(sents, char_sents, feats)
