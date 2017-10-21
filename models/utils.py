@@ -88,10 +88,6 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
     return word_emb, word_to_id
 
 
-def get_feature_w(w):
-    return [1, 0]
-
-
 def pkl_dump(obj, path):
     with open(path, "wb") as fout:
         pkl.dump(obj, fout)
