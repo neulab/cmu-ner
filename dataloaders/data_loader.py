@@ -99,6 +99,7 @@ class NER_DataLoader():
                     to_read_line = []
                 else:
                     to_read_line.append(line.strip())
+            self.read_one_line_set(to_read_line, tag_set, word_set, char_set)
         # tag_set = set(tag_list)
         # word_set = set(tag_list)
         # char_set = set(char_list)
@@ -115,30 +116,36 @@ class NER_DataLoader():
         tgt_tags = []
         discrete_features = []
 
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_ner = []
+            temp_char = []
+            temp_discrete = []
+            for w in one_sent:
+                fields = w.split()
+                word = fields[0]
+                ner_tag = fields[-1]
+                if self.use_discrete_feature:
+                    temp_discrete.append(get_feature_w(word))
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_ner.append(self.tag_to_id[ner_tag])
+                temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            tgt_tags.append(temp_ner)
+            discrete_features.append(temp_discrete)
+
         with codecs.open(path, "r", "utf-8") as fin:
             one_sent = []
             for line in fin:
                 if line.strip() == "":
-                    temp_sent = []
-                    temp_ner = []
-                    temp_char = []
-                    temp_discrete = []
-                    for w in one_sent:
-                        fields = w.split()
-                        word = fields[0]
-                        ner_tag = fields[-1]
-                        if self.use_discrete_feature:
-                            temp_discrete.append(get_feature_w(word))
-                        temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
-                        temp_ner.append(self.tag_to_id[ner_tag])
-                        temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
-                    sents.append(temp_sent)
-                    char_sents.append(temp_char)
-                    tgt_tags.append(temp_ner)
-                    discrete_features.append(temp_discrete)
+                    if len(one_sent) > 0:
+                        add_sent(one_sent)
                     one_sent = []
                 else:
                     one_sent.append(line.strip())
+            if len(one_sent) > 0:
+                add_sent(one_sent)
 
         if self.use_discrete_feature:
             self.num_feats = len(discrete_features[0][0])
