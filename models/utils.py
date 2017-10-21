@@ -4,9 +4,9 @@ import numpy as np
 from collections import defaultdict
 import gzip
 import cPickle as pkl
-
+import codecs
+import math
 np.random.seed(1)
-
 
 def iob2(tags):
     """
@@ -73,10 +73,19 @@ def fopen(filename, mode='r'):
     return open(filename, mode)
 
 
-def get_pretrained_emb(path_to_emb):
-    a = 1
-    b = 2
-    return a, b
+def get_pretrained_emb(path_to_emb, word_to_id, dim):
+    word_emb = []
+    for _ in range(len(word_to_id)):
+        word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim)))
+
+    for line in codecs.open(path_to_emb, "r", "utf-8"):
+        items = line.strip().split()
+        if items[0] not in word_to_id:
+            word_to_id[items[0]] = len(word_to_id)
+            word_emb.append(np.asarray(items[1:]).astype(float))
+        else:
+            word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
+    return word_emb, word_to_id
 
 
 def get_feature_w(w):

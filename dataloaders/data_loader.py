@@ -35,8 +35,9 @@ class NER_DataLoader():
 
         self.word_padding_token = 0
 
-        if self.use_discrete_feature:
-            self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path)
+        if self.pretrained_embedding_path is not None:
+            self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path,
+                                                                         self.word_to_id, self.args.word_emb_dim)
 
         # for char vocab and word vocab, we reserve id 0 for the eos padding, and len(vocab)-1 for the <unk>
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
