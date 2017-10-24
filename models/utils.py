@@ -8,6 +8,7 @@ import codecs
 import math
 np.random.seed(1)
 
+
 def iob2(tags):
     """
     Check that tags have a valid IOB format.
@@ -86,10 +87,6 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
         else:
             word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
     return word_emb, word_to_id
-
-
-def get_feature_w(w):
-    return [1, 0]
 
 
 def pkl_dump(obj, path):
