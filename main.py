@@ -22,9 +22,15 @@ def evaluate(data_loader, path, model):
 def main(args):
     ner_data_loader = NER_DataLoader(args)
 
-    sents, char_sents, tgt_tags, discrete_features = ner_data_loader.get_data_set(args.train_path)
+    print ner_data_loader
+    if args.data_aug:
+        sents, char_sents, tgt_tags, discrete_features = ner_data_loader.get_data_set(args.train_path, args.lang)
+    else:
+        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
+        sents_aug, char_sents_aug, tags_aug, dfs_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
+        sents, char_sents, tgt_tags, discrete_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug
 
-    epoch = bad_counter = updates = cum_acc = tot_example = 0
+    epoch = bad_counter = updates = cum_acc = tot_example = cum_loss = 0
     patience = 20
 
     display_freq = 10
@@ -52,9 +58,10 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            # print "batch size: ", len(b_sents)
             loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
             loss_val = loss.value()
+            cum_loss += loss_val * len(b_sents)
+            tot_example += len(b_sents)
 
             updates += 1
             loss.backward()
@@ -62,7 +69,7 @@ def main(args):
 
             if updates % display_freq == 0:
                 # print("avg sum score = %f, avg sent score = %f" % (sum_s.value(), sent_s.value()))
-                print("Epoch = %d, Updates = %d, CRF Loss=%f." % (epoch, updates, loss_val))
+                print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 pass
 
@@ -73,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--dynet-mem", default=1000, type=int)
     parser.add_argument("--dynet-seed", type=int)
 
+    parser.add_argument("--lang", default="english", help="the target language")
     parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
@@ -93,9 +101,15 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=10)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
-    parser.add_argument("--data_aug", default=False, action="store_true")
+
+    parser.add_argument("--data_aug", default=False, action="store_true", help="If use data_aug, the train_path should be the combined training file")
+    parser.add_argument("--aug_lang", default="english", help="the language to augment the dataset")
+    parser.add_argument("--aug_lang_train_path", default=None, type=str)
+    parser.add_argument("--tgt_lang_train_path", default=None, type=str)
+
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
     parser.add_argument("--pretrain_finetune", default="False", action="store_true")
+
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--feature_dim", type=int, default=50)
     args = parser.parse_args()

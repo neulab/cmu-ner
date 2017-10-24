@@ -148,4 +148,4 @@ class chain_CRF_decoder(Decoder):
         return best_path_score, best_path
 
     def cal_accuracy(self, pred_path, true_path):
-        return np.sum(np.equal(pred_path, true_path))/len(pred_path)
+        return np.sum(np.equal(pred_path, true_path).astype(np.float32))/len(pred_path)
