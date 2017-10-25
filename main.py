@@ -2,28 +2,62 @@ __author__ = 'chuntingzhou'
 import argparse
 from dataloaders.data_loader import *
 from models.model_builder import *
-import time
+import os
 
 
 def evaluate(data_loader, path, model):
-    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path)
+    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang)
 
-    tot_acc = 0.0
+    # tot_acc = 0.0
+    predictions = []
+    gold_standards = []
+    i = 0
     for sent, char_sent, tgt_tag, discrete_feature in zip(sents, char_sents, tgt_tags, discrete_features):
         sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
         best_score, best_path = model.eval(sent, char_sent, discrete_feature)
 
         assert len(best_path) == len(tgt_tag)
-        acc = model.crf_decoder.cal_accuracy(best_path, tgt_tags)
-        tot_acc += acc
-    return tot_acc / len(sents)
+        # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
+        # tot_acc += acc
+        predictions.append(best_path)
+        gold_standards.append(tgt_tag)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    with open("../eval/pred_output.txt", "w") as fout:
+        for pred, gold in zip(predictions, gold_standards):
+            for p, g in zip(pred, gold):
+                fout.write("XXX " + data_loader.id_to_tag[g] + " " + data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    os.system("../eval/conlleval.v2 < ../eval/pred_output.txt > eval_score.txt")
+
+    with open("eval_score.txt", "r") as fin:
+        lid = 0
+        for line in fin:
+            if lid == 1:
+                fields = line.split(";")
+                acc = float(fields[0].split(":")[1].strip()[:-1])
+                precision = float(fields[1].split(":")[1].strip()[:-1])
+                recall = float(fields[2].split(":")[1].strip()[:-1])
+                f1 = float(fields[3].split(":")[1].strip())
+            lid += 1
+
+    output = open("eval_score.txt", "r").read().strip()
+    print output
+    os.system("rm eval_score.txt")
+
+    return acc, precision, recall, f1
 
 
 def main(args):
     ner_data_loader = NER_DataLoader(args)
 
-    print ner_data_loader
-    if args.data_aug:
+    print ner_data_loader.id_to_tag
+
+    if not args.data_aug:
         sents, char_sents, tgt_tags, discrete_features = ner_data_loader.get_data_set(args.train_path, args.lang)
     else:
         sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
@@ -71,8 +105,17 @@ def main(args):
                 # print("avg sum score = %f, avg sent score = %f" % (sum_s.value(), sent_s.value()))
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
-                pass
-
+                acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
+                if len(valid_history) == 0 or f1 > max(valid_history):
+                    bad_counter = 0
+                    best_results = [acc, precision, recall, f1]
+                else:
+                    bad_counter += 1
+                if bad_counter > patience:
+                    print("Early stop!")
+                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    exit(0)
+                valid_history.append(f1)
 
 # add task specific trainer and args
 if __name__ == "__main__":
@@ -96,16 +139,16 @@ if __name__ == "__main__":
     parser.add_argument("--layer", default=1, type=int)
 
     parser.add_argument("--dropout_rate", default=0.5, type=float)
-    parser.add_argument("--valid_freq", default=500, type=int)
-    parser.add_argument("--tot_epochs", default=100)
-    parser.add_argument("--batch_size", default=10)
+    parser.add_argument("--valid_freq", default=5, type=int)
+    parser.add_argument("--tot_epochs", default=100, type=int)
+    parser.add_argument("--batch_size", default=10, type=int)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
 
     parser.add_argument("--data_aug", default=False, action="store_true", help="If use data_aug, the train_path should be the combined training file")
     parser.add_argument("--aug_lang", default="english", help="the language to augment the dataset")
     parser.add_argument("--aug_lang_train_path", default=None, type=str)
-    parser.add_argument("--tgt_lang_train_path", default=None, type=str)
+    parser.add_argument("--tgt_lang_train_path", default="../datasets/english/eng.train.bio.conll", type=str)
 
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
     parser.add_argument("--pretrain_finetune", default="False", action="store_true")
