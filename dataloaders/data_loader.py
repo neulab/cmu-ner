@@ -2,12 +2,13 @@ __author__ = 'chuntingzhou'
 from models.utils import *
 import codecs
 import os
-
+from models.features import *
 
 class NER_DataLoader():
     def __init__(self, args):
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         self.train_path = args.train_path
+        self.args = args
 
         self.tag_vocab_path = self.train_path + ".tag_vocab"
         self.word_vocab_path = self.train_path + ".word_vocab"
@@ -37,8 +38,7 @@ class NER_DataLoader():
 
         if self.pretrained_embedding_path is not None:
             self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path,
-                                                                         self.word_to_id, self.args.word_emb_dim)
-
+                                                                         self.word_to_id, args.word_emb_dim)
         # for char vocab and word vocab, we reserve id 0 for the eos padding, and len(vocab)-1 for the <unk>
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
         self.id_to_word = {v: k for k, v in self.word_to_id.iteritems()}
@@ -111,7 +111,7 @@ class NER_DataLoader():
 
         return tag_vocab, word_vocab, char_vocab
 
-    def get_data_set(self, path):
+    def get_data_set(self, path, lang):
         sents = []
         char_sents = []
         tgt_tags = []
@@ -127,7 +127,7 @@ class NER_DataLoader():
                 word = fields[0]
                 ner_tag = fields[-1]
                 if self.use_discrete_feature:
-                    temp_discrete.append(get_feature_w(word))
+                    temp_discrete.append(get_feature_w(lang, word))
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
