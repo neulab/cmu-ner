@@ -81,11 +81,15 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
-        if items[0] not in word_to_id:
-            word_to_id[items[0]] = len(word_to_id)
-            word_emb.append(np.asarray(items[1:]).astype(float))
-        else:
-            word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
+        if len(items) > 1:
+            try:
+                if items[0] not in word_to_id:
+                     word_to_id[items[0]] = len(word_to_id)
+                     word_emb.append(np.asarray(items[1:]).astype(float))
+                else:
+                    word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
+            except ValueError:
+                 continue
     return word_emb, word_to_id
 
 
@@ -112,7 +116,7 @@ def log_sum_exp_dim_0(x):
     x = x - max_score_extend
     exp_x = dy.exp(x)
     # (dim_1, batch_size), if no dim_1, return ((1,), batch_size)
-    log_sum_exp_x = dy.log(dy.mean_dim(exp_x, d=0) * dims[0][0])
+    log_sum_exp_x = dy.log(dy.mean_dim(exp_x, d=[0],b=False) * dims[0][0])
     return log_sum_exp_x + max_score
 
 
