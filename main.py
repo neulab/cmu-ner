@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--layer", default=1, type=int)
 
     parser.add_argument("--dropout_rate", default=0.5, type=float)
-    parser.add_argument("--valid_freq", default=5, type=int)
+    parser.add_argument("--valid_freq", default=500, type=int)
     parser.add_argument("--tot_epochs", default=100, type=int)
     parser.add_argument("--batch_size", default=10, type=int)
 
