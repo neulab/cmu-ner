@@ -37,7 +37,10 @@ class vanilla_NER_CRF_model(Model):
             birnn_input_dim += args.feature_dim
 
         self.char_cnn_encoder = CNN_Encoder(self.model, char_emb_dim, cnn_win_size, cnn_filter_size, dropout_rate, char_vocab_size)
-        self.word_lookup = Lookup_Encoder(self.model, word_vocab_size, word_emb_dim, word_padding_token)
+        if args.pretrain_emb_path is None:
+            self.word_lookup = Lookup_Encoder(self.model, word_vocab_size, word_emb_dim, word_padding_token)
+        else:
+            self.word_lookup = Lookup_Encoder(self.model, word_vocab_size, word_emb_dim, word_padding_token, data_loader.pretrain_word_emb)
 
         self.birnn_encoder = BiRNN_Encoder(self.model, birnn_input_dim, hidden_dim, dropout_rate)
 

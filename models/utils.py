@@ -116,7 +116,7 @@ def log_sum_exp_dim_0(x):
     x = x - max_score_extend
     exp_x = dy.exp(x)
     # (dim_1, batch_size), if no dim_1, return ((1,), batch_size)
-    log_sum_exp_x = dy.log(dy.mean_dim(exp_x, d=[0],b=False) * dims[0][0])
+    log_sum_exp_x = dy.log(dy.mean_dim(exp_x, d=[0], b=False) * dims[0][0])
     return log_sum_exp_x + max_score
 
 

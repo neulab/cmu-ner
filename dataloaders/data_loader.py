@@ -153,3 +153,37 @@ class NER_DataLoader():
         else:
             self.num_feats = 0
         return sents, char_sents, tgt_tags, discrete_features
+
+    def get_lr_test(self, path, lang):
+        sents = []
+        char_sents = []
+        discrete_features = []
+
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_char = []
+            temp_discrete = []
+            for word in one_sent:
+                if self.use_discrete_feature:
+                    temp_discrete.append(get_feature_w(lang, word))
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            discrete_features.append(temp_discrete)
+
+        original_sents = []
+        with codecs.open(path, "r", "utf-8") as fin:
+            for line in fin:
+                one_sent = line.rstrip.split()
+                if line:
+                    if line.rstrip() != u'\u25b6' and line.rstrip() != '__________':
+                        add_sent(one_sent)
+                        original_sents.append(one_sent)
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
+
+        return sents, char_sents, discrete_features, original_sents

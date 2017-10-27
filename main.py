@@ -52,6 +52,31 @@ def evaluate(data_loader, path, model):
     return acc, precision, recall, f1
 
 
+def evaluate_lr(data_loader, path, model):
+    sents, char_sents, discrete_features, origin_sents = data_loader.get_lr_test(path, args.lang)
+
+    predictions = []
+    i = 0
+    for sent, char_sent, discrete_feature in zip(sents, char_sents, discrete_features):
+        sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature)
+
+        # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
+        # tot_acc += acc
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    with open("../eval/pred_output.txt", "w") as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    ## evaluation
+
 def main(args):
     ner_data_loader = NER_DataLoader(args)
 

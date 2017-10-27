@@ -44,10 +44,13 @@ class Encoder():
 
 
 class Lookup_Encoder(Encoder):
-    def __init__(self, model, vocab_size, emb_size, padding_token=None):
+    def __init__(self, model, vocab_size, emb_size, padding_token=None, pretrain_embedding=None):
         Encoder.__init__(self)
         self.padding_token = padding_token
-        self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
+        if pretrain_embedding is not None:
+            self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size), init=pretrain_embedding)
+        else:
+            self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
 
     def encode(self, input_seqs):
         transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
