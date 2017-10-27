@@ -127,7 +127,7 @@ class NER_DataLoader():
                 word = fields[0]
                 ner_tag = fields[-1]
                 if self.use_discrete_feature:
-                    temp_discrete.append(get_feature_w(lang, word))
+                    temp_discrete.append(get_feature_w(lang, [word])[0])
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])

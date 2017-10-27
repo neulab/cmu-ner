@@ -409,6 +409,7 @@ def extract_token_level(lang, seg):
     fts = extract(lang, seg)
     return [v[TOKEN_START:TOKEN_END] for v in fts]
 
+
 def extractIndicatorFeatures(lang, seg):
     fts = extract(lang, seg)
     return fts

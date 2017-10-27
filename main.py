@@ -179,6 +179,6 @@ if __name__ == "__main__":
     parser.add_argument("--pretrain_finetune", default="False", action="store_true")
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
-    parser.add_argument("--feature_dim", type=int, default=50)
+    parser.add_argument("--feature_dim", type=int, default=30)
     args = parser.parse_args()
     main(args)
