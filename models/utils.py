@@ -135,6 +135,7 @@ def make_bucket_batches(data_collections, batch_size):
     for src_len in buckets:
         bucket = buckets[src_len]
         np.random.shuffle(bucket)
+
         num_batches = int(np.ceil(len(bucket) * 1.0 / batch_size))
         for i in range(num_batches):
             cur_batch_size = batch_size if i < num_batches - 1 else len(bucket) - batch_size * i
