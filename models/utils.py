@@ -90,7 +90,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
                     word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
             except ValueError:
                  continue
-    emb = np.array(word_emb, dtype=object)
+    emb = np.array(word_emb)
     return emb, word_to_id
 
 
