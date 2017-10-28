@@ -77,7 +77,7 @@ def fopen(filename, mode='r'):
 def get_pretrained_emb(path_to_emb, word_to_id, dim):
     word_emb = []
     for _ in range(len(word_to_id)):
-        word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim)))
+        word_emb.append(np.array(np.random.uniform(low=-math.sqrt(3.0/dim), high=math.sqrt(3.0/dim),size=(50,))))
 
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
