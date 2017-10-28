@@ -175,7 +175,7 @@ class NER_DataLoader():
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
             for line in fin:
-                one_sent = line.rstrip.split()
+                one_sent = line.rstrip().split()
                 if line:
                     if line.rstrip() != u'\u25b6' and line.rstrip() != '__________':
                         add_sent(one_sent)
