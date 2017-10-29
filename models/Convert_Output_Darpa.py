@@ -19,7 +19,7 @@ def run_program(args):
 
         with codecs.open(args.setEconll, 'r',encoding='utf-8', errors='ignore') as input_file:
             lines = input_file.readlines()
-   # assert len(output_lines) == len(lines)
+        assert len(output_lines) == len(lines)
         with codecs.open(args.output,'w',encoding='utf-8') as output_file:
             ctr = -1
             for line in lines:

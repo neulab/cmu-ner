@@ -68,33 +68,12 @@ def evaluate_lr(data_loader, path, model):
             print "Testing processed %d lines " % i
 
 
-    fscore = codecs.open("../eval/pred_output.txt", "w",encoding='utf-8')
-    with codecs.open("../eval/pred_output.conll", "a",encoding='utf-8') as fout:
+    with codecs.open("../eval/pred_output.conll", "w",encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
-                fscore.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
-            fscore.write("\n")
 
-    os.system("../eval/conlleval.v2 < ../eval/pred_output.txt > eval_score.txt")
-
-    with open("eval_score.txt", "r") as fin:
-        lid = 0
-        for line in fin:
-            if lid == 1:
-                fields = line.split(";")
-                acc = float(fields[0].split(":")[1].strip()[:-1])
-                precision = float(fields[1].split(":")[1].strip()[:-1])
-                recall = float(fields[2].split(":")[1].strip()[:-1])
-                f1 = float(fields[3].split(":")[1].strip())
-            lid += 1
-
-    output = open("eval_score.txt", "r").read().strip()
-    print output
-    os.system("rm eval_score.txt")
-
-    return acc, precision, recall, f1
 
 
 def main(args):
@@ -110,7 +89,7 @@ def main(args):
         sents, char_sents, tgt_tags, discrete_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug
 
     epoch = bad_counter = updates = cum_acc = tot_example = cum_loss = 0
-    patience = 20
+    patience = 50
 
     display_freq = 10
     valid_freq = args.valid_freq
@@ -152,25 +131,26 @@ def main(args):
             if updates % valid_freq == 0:
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
+                    if len(valid_history) == 0 or f1 > max(valid_history):
+                        bad_counter = 0
+                        best_results = [acc, precision, recall, f1]
+                    else:
+                        bad_counter += 1
+                    if bad_counter > patience:
+                        print("Early stop!")
+                        print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                        exit(0)
+                    valid_history.append(f1)
                 else:
-                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader,args.test_path,model)
-                if len(valid_history) == 0 or f1 > max(valid_history):
-                    bad_counter = 0
-                    best_results = [acc, precision, recall, f1]
-                else:
-                    bad_counter += 1
-                if bad_counter > patience:
-                    print("Early stop!")
-                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    exit(0)
-                valid_history.append(f1)
+                    evaluate_lr(ner_data_loader,args.test_path,model)
+
 
 
     #Making output ready for Darpa format
     ## evaluation
     if args.setEconll is not None:
-        os.system("python ../models/Convert_Output_Darpa.py ../eval/pred_output.conll  %s  > ../eval/conv_to_darpa.conll" % (args.setEconll))
-        os.system("python ../models/Convert_to_darpa_xml.py ../eval/conv_to_darpa.conll > ../eval/darpa_Ready.xml")
+        os.system("python ../models/Convert_Output_Darpa.py --input ../eval/pred_output.conll  --setEconll %s  --output ../eval/conv_to_darpa.conll" % (args.setEconll))
+        #os.system("python /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/models/Convert_to_darpa_xml.py --input /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conv_to_darpa.conll --output /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/darpa_Ready.xml")
 
 # add task specific trainer and args
 if __name__ == "__main__":

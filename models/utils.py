@@ -81,7 +81,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
-        if len(items) > 1:
+        if len(items) == dim +1:
             try:
                 if items[0] not in word_to_id:
                      word_to_id[items[0]] = len(word_to_id)
