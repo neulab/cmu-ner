@@ -61,21 +61,20 @@ def evaluate_lr(data_loader, path, model):
         sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
         best_score, best_path = model.eval(sent, char_sent, discrete_feature)
 
-        # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
-        # tot_acc += acc
         predictions.append(best_path)
 
         i += 1
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-    with open("../eval/pred_output.txt", "w") as fout:
+
+    with codecs.open("../eval/pred_output.conll", "w",encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
-    ## evaluation
+
 
 def main(args):
     ner_data_loader = NER_DataLoader(args)
@@ -92,7 +91,7 @@ def main(args):
     print ner_data_loader.char_to_id
 
     epoch = bad_counter = updates = tot_example = cum_loss = 0
-    patience = 20
+    patience = 30
 
     display_freq = 10
     valid_freq = args.valid_freq
@@ -132,17 +131,28 @@ def main(args):
                 # print("avg sum score = %f, avg sent score = %f" % (sum_s.value(), sent_s.value()))
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
-                acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
-                if len(valid_history) == 0 or f1 > max(valid_history):
-                    bad_counter = 0
-                    best_results = [acc, precision, recall, f1]
+                if not args.isLr:
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
+                    if len(valid_history) == 0 or f1 > max(valid_history):
+                        bad_counter = 0
+                        best_results = [acc, precision, recall, f1]
+                    else:
+                        bad_counter += 1
+                    if bad_counter > patience:
+                        print("Early stop!")
+                        print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                        exit(0)
+                    valid_history.append(f1)
                 else:
-                    bad_counter += 1
-                if bad_counter > patience:
-                    print("Early stop!")
-                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    exit(0)
-                valid_history.append(f1)
+                    evaluate_lr(ner_data_loader,args.test_path,model)
+
+
+
+    #Making output ready for Darpa format
+    ## evaluation
+    if args.setEconll is not None:
+        os.system("python ../models/Convert_Output_Darpa.py --input ../eval/pred_output.conll  --setEconll %s  --output ../eval/conv_to_darpa.conll" % (args.setEconll))
+        #os.system("python /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/models/Convert_to_darpa_xml.py --input /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conv_to_darpa.conll --output /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/darpa_Ready.xml")
 
 # add task specific trainer and args
 if __name__ == "__main__":
@@ -182,5 +192,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--feature_dim", type=int, default=30)
+    parser.add_argument("--isLr",default=False)
+    parser.add_argument("--setEconll", type=str,default=None)
     args = parser.parse_args()
     main(args)
