@@ -74,13 +74,14 @@ class Discrete_Feature_Encoder(Encoder):
 
 
 class CNN_Encoder(Encoder):
-    def __init__(self, model, emb_size, win_size=3, filter_size=64, dropout=0.5, vocab_size=0):
+    def __init__(self, model, emb_size, win_size=3, filter_size=64, dropout=0.5, vocab_size=0, padding_token=0):
         Encoder.__init__(self)
         self.vocab_size = vocab_size # if 0, no lookup tables
         self.win_size = win_size
         self.filter_size =filter_size
         self.emb_size = emb_size
         self.dropout_rate=dropout
+        self.paddding_token = padding_token
         if vocab_size != 0:
             self.lookup_emb = model.add_lookup_parameters((vocab_size, 1, 1, emb_size))
         self.W_cnn = model.add_parameters((1, win_size, emb_size, filter_size))
@@ -107,7 +108,7 @@ class CNN_Encoder(Encoder):
                 sent_emb = []
                 for w in sent:
                     if len(w) < self.win_size:
-                        w += [0] * (self.win_size - len(w))
+                        w += [self.paddding_token] * (self.win_size - len(w))
                     input_embs = dy.concatenate([dy.lookup(self.lookup_emb, c) for c in w], d=1)
                     w_emb = self._cnn_emb(input_embs)  # (filter_size, 1)
                     sent_emb.append(w_emb)

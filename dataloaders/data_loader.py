@@ -29,12 +29,14 @@ class NER_DataLoader():
             self.word_to_id['<unk>'] = len(self.word_to_id)
             self.word_to_id['<eos>'] = 0
             self.char_to_id['<unk>'] = len(self.char_to_id)
+            self.char_to_id['<pad>'] = 0
 
             pkl_dump(self.tag_to_id, self.tag_vocab_path)
             pkl_dump(self.char_to_id, self.char_vocab_path)
             pkl_dump(self.word_to_id, self.word_vocab_path)
 
         self.word_padding_token = 0
+        self.char_padding_token = 0
 
         if self.pretrained_embedding_path is not None:
             self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path,
@@ -107,7 +109,7 @@ class NER_DataLoader():
 
         tag_vocab = self.get_vocab(tag_set)
         word_vocab = self.get_vocab(word_set, 1)
-        char_vocab = self.get_vocab(char_set)
+        char_vocab = self.get_vocab(char_set, 1)
 
         return tag_vocab, word_vocab, char_vocab
 

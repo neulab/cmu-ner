@@ -8,6 +8,13 @@ import codecs
 import math
 np.random.seed(1)
 
+import re
+MAX_CHAR_LENGTH = 45
+
+# Regular expressions used to normalize digits.
+DIGIT_RE = re.compile(br"\d")
+
+# word = utils.DIGIT_RE.sub(b"0", tokens[0]) if normalize_digits else tokens[0]
 
 def iob2(tags):
     """
@@ -77,20 +84,27 @@ def fopen(filename, mode='r'):
 def get_pretrained_emb(path_to_emb, word_to_id, dim):
     word_emb = []
     for _ in range(len(word_to_id)):
-        word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim)))
+        word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim), size=dim))
 
+    i = 0
+    print "length of dict: ", len(word_to_id)
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
         if len(items) > 1:
             try:
+                assert len(items) == dim + 1
                 if items[0] not in word_to_id:
                      word_to_id[items[0]] = len(word_to_id)
-                     word_emb.append(np.asarray(items[1:]).astype(float))
+                     word_emb.append(np.asarray(items[1:]).astype(np.float32))
+                     assert len(word_to_id) == len(word_emb)
+                     i += 1
                 else:
-                    word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(float)
+                    word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(np.float32)
             except ValueError:
                  continue
-    emb = np.array(word_emb)
+    print "total dict: ", len(word_to_id), len(word_emb)
+    print "not found: ", i
+    emb = np.array(word_emb, dtype=np.float32)
     return emb, word_to_id
 
 

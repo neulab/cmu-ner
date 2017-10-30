@@ -89,7 +89,9 @@ def main(args):
         sents_aug, char_sents_aug, tags_aug, dfs_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
         sents, char_sents, tgt_tags, discrete_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug
 
-    epoch = bad_counter = updates = cum_acc = tot_example = cum_loss = 0
+    print ner_data_loader.char_to_id
+
+    epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 20
 
     display_freq = 10
