@@ -83,6 +83,7 @@ class CNN_Encoder(Encoder):
         self.dropout_rate=dropout
         self.paddding_token = padding_token
         if vocab_size != 0:
+            print "In CNN encoder: creating lookup embedding!"
             self.lookup_emb = model.add_lookup_parameters((vocab_size, 1, 1, emb_size))
         self.W_cnn = model.add_parameters((1, win_size, emb_size, filter_size))
         self.b_cnn = model.add_parameters((filter_size))
@@ -154,6 +155,7 @@ class BiRNN_Encoder(Encoder):
         self.padding_token = padding_token
         self.drop_out_rate = dropout_rate
         if vocab_size > 0:
+            print "In BiRNN, creating lookup table!"
             self.vocab_emb = model.add_lookup_parameters((vocab_size, emb_size))
 
     def encode(self, input_seqs):

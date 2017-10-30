@@ -158,7 +158,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
-    parser.add_argument("--dynet-seed", type=int)
+    parser.add_argument("--dynet-seed", default=5783287, type=int)
 
     parser.add_argument("--lang", default="english", help="the target language")
     parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
