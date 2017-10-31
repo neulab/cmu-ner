@@ -100,7 +100,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     for word, id in word_to_id.iteritems():
         if word.lower() in pretrain_word_emb:
-            word_emb[word_to_id[word]] = pretrain_word_emb[word.lower()]
+            word_emb[id] = pretrain_word_emb[word.lower()]
     emb = np.array(word_emb, dtype=np.float32)
     return emb, word_to_id
 
