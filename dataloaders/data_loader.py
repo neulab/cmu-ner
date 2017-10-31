@@ -176,12 +176,12 @@ class NER_DataLoader():
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
+            lineNum =1
             for line in fin:
                 one_sent = line.rstrip().split()
                 if line:
-                    if line.rstrip() != u'\u25b6' and line.rstrip() != '__________':
-                        add_sent(one_sent)
-                        original_sents.append(one_sent)
+                    add_sent(one_sent)
+                    original_sents.append(one_sent)
 
         if self.use_discrete_feature:
             self.num_feats = len(discrete_features[0][0])
