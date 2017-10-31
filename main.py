@@ -3,6 +3,9 @@ import argparse
 from dataloaders.data_loader import *
 from models.model_builder import *
 import os
+import uuid
+
+uid = uuid.uuid4().get_hex()[:6]
 
 
 def evaluate(data_loader, path, model):
@@ -26,15 +29,17 @@ def evaluate(data_loader, path, model):
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-    with open("../eval/pred_output.txt", "w") as fout:
+    pred_output_fname = "../eval/%s_pred_output.txt" % (str(uid))
+    eval_output_fname = "%s_eval_score.txt" % (str(uid))
+    with open(pred_output_fname, "w") as fout:
         for pred, gold in zip(predictions, gold_standards):
             for p, g in zip(pred, gold):
                 fout.write("XXX " + data_loader.id_to_tag[g] + " " + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
-    os.system("../eval/conlleval.v2 < ../eval/pred_output.txt > eval_score.txt")
+    os.system("../eval/conlleval.v2 < %s > %s" % (pred_output_fname, eval_output_fname))
 
-    with open("eval_score.txt", "r") as fin:
+    with open(eval_output_fname, "r") as fin:
         lid = 0
         for line in fin:
             if lid == 1:
@@ -45,9 +50,9 @@ def evaluate(data_loader, path, model):
                 f1 = float(fields[3].split(":")[1].strip())
             lid += 1
 
-    output = open("eval_score.txt", "r").read().strip()
+    output = open(eval_output_fname, "r").read().strip()
     print output
-    os.system("rm eval_score.txt")
+    os.system("rm %s" % (eval_output_fname))
 
     return acc, precision, recall, f1
 
@@ -67,13 +72,14 @@ def evaluate_lr(data_loader, path, model):
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-
-    with codecs.open("../eval/pred_output.conll", "w",encoding='utf-8') as fout:
+    pred_output_fname = "../eval/%s_pred_output.conll" % (str(uid))
+    with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
+    return 0, 0, 0, 0
 
 
 def main(args):
@@ -133,26 +139,25 @@ def main(args):
             if updates % valid_freq == 0:
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
-                    if len(valid_history) == 0 or f1 > max(valid_history):
-                        bad_counter = 0
-                        best_results = [acc, precision, recall, f1]
-                    else:
-                        bad_counter += 1
-                    if bad_counter > patience:
-                        print("Early stop!")
-                        print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                        exit(0)
-                    valid_history.append(f1)
                 else:
-                    evaluate_lr(ner_data_loader,args.test_path,model)
+                    # TODO: FILL THIS FUNCTION
+                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
+                if len(valid_history) == 0 or f1 > max(valid_history):
+                    bad_counter = 0
+                    best_results = [acc, precision, recall, f1]
+                else:
+                    bad_counter += 1
+                if bad_counter > patience:
+                    print("Early stop!")
+                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    exit(0)
+                valid_history.append(f1)
 
-
-
-    #Making output ready for Darpa format
-    ## evaluation
-    if args.setEconll is not None:
-        os.system("python ../models/Convert_Output_Darpa.py --input ../eval/pred_output.conll  --setEconll %s  --output ../eval/conv_to_darpa.conll" % (args.setEconll))
-        #os.system("python /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/models/Convert_to_darpa_xml.py --input /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conv_to_darpa.conll --output /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/darpa_Ready.xml")
+    # #Making output ready for Darpa format
+    # ## evaluation
+    # if args.setEconll is not None:
+    #     os.system("python ../models/Convert_Output_Darpa.py --input ../eval/pred_output.conll  --setEconll %s  --output ../eval/conv_to_darpa.conll" % (args.setEconll))
+    #     #os.system("python /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/models/Convert_to_darpa_xml.py --input /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conv_to_darpa.conll --output /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/darpa_Ready.xml")
 
 # add task specific trainer and args
 if __name__ == "__main__":
@@ -192,7 +197,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--feature_dim", type=int, default=30)
-    parser.add_argument("--isLr",default=False)
-    parser.add_argument("--setEconll", type=str,default=None)
+    parser.add_argument("--isLr", default=False, action="store_true")
+    parser.add_argument("--setEconll", type=str, default=None)
     args = parser.parse_args()
     main(args)
