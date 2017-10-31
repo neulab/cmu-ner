@@ -80,7 +80,7 @@ class CNN_Encoder(Encoder):
         self.win_size = win_size
         self.filter_size =filter_size
         self.emb_size = emb_size
-        self.dropout_rate=dropout
+        self.dropout_rate = dropout
         self.paddding_token = padding_token
         if vocab_size != 0:
             print "In CNN encoder: creating lookup embedding!"
@@ -96,9 +96,10 @@ class CNN_Encoder(Encoder):
         b_cnn = dy.parameter(self.b_cnn)
 
         cnn_encs = dy.conv2d_bias(input_embs, W_cnn, b_cnn, stride=(1, 1), is_valid=False)
-        max_pool_out = dy.reshape(dy.max_dim(cnn_encs, d=1), (self.filter_size,))
-        rec_pool_out = dy.rectify(max_pool_out)
-        return rec_pool_out
+        tanh_cnn_encs = dy.tanh(cnn_encs)
+        max_pool_out = dy.reshape(dy.max_dim(tanh_cnn_encs, d=1), (self.filter_size,))
+        # rec_pool_out = dy.rectify(max_pool_out)
+        return max_pool_out
 
     def encode(self, input_seqs, char=True):
         batch_size = len(input_seqs)
@@ -154,6 +155,7 @@ class BiRNN_Encoder(Encoder):
         self.vocab_size =  vocab_size
         self.padding_token = padding_token
         self.drop_out_rate = dropout_rate
+        self.emb_drop_rate = 0.2
         if vocab_size > 0:
             print "In BiRNN, creating lookup table!"
             self.vocab_emb = model.add_lookup_parameters((vocab_size, emb_size))
@@ -162,9 +164,10 @@ class BiRNN_Encoder(Encoder):
         if self.vocab_size > 0:
             # input_seqs = [[w1, w2],[]]
             transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
-            w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.drop_out_rate) if self.drop_out_rate > 0. else dy.lookup_batch(self.vocab_emb, wids) for wids in transpose_inputs]
+            w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.emb_drop_rate) if self.emb_drop_rate > 0. else dy.lookup_batch(self.vocab_emb, wids)
+                      for wids in transpose_inputs]
         else:
-            w_embs = [dy.dropout(emb, self.drop_out_rate) if self.drop_out_rate > 0. else emb for emb in input_seqs]
+            w_embs = [dy.dropout(emb, self.emb_drop_rate) if self.emb_drop_rate > 0. else emb for emb in input_seqs]
         # if vocab_size = 0: input_seqs = [(input_dim, batch_size)]
 
         w_embs_r = w_embs[::-1]
@@ -172,5 +175,6 @@ class BiRNN_Encoder(Encoder):
         fwd_vectors = self.fwd_RNN.initial_state().transduce(w_embs)
         bwd_vectors = self.bwd_RNN.initial_state().transduce(w_embs_r)[::-1]
 
-        birnn_outputs = [dy.concatenate([fwd_v, bwd_v]) for (fwd_v, bwd_v) in zip(fwd_vectors, bwd_vectors)]
+        birnn_outputs = [dy.dropout(dy.concatenate([fwd_v, bwd_v]), self.drop_out_rate) if self.drop_out_rate > 0.0 else dy.concatenate([fwd_v, bwd_v])
+                         for (fwd_v, bwd_v) in zip(fwd_vectors, bwd_vectors)]
         return birnn_outputs

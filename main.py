@@ -149,7 +149,8 @@ def main(args):
                     bad_counter += 1
                 if bad_counter > patience:
                     print("Early stop!")
-                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
                     exit(0)
                 valid_history.append(f1)
 
