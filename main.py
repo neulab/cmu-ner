@@ -114,9 +114,10 @@ def main(args):
         for line in batch:
             print [u" ".join([id_to_vocab[c] for c in w]) for w in line]
 
+    lr_decay = 0.05
+
     valid_history = []
     while epoch <= args.tot_epochs:
-        epoch += 1
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
             dy.renew_cg()
@@ -149,9 +150,13 @@ def main(args):
                     bad_counter += 1
                 if bad_counter > patience:
                     print("Early stop!")
-                    print("Best acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+                    # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
                     exit(0)
                 valid_history.append(f1)
+        epoch += 1
+        print("Epoch = %d, Learning Rate = %f." % (epoch, 0.015/(1+epoch*lr_decay)))
+        trainer = dy.MomentumSGDTrainer(model.model, 0.015/(1+epoch*lr_decay))
 
     # #Making output ready for Darpa format
     # ## evaluation
