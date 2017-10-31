@@ -4,6 +4,8 @@ from dataloaders.data_loader import *
 from models.model_builder import *
 import os
 import uuid
+from models.Convert_Output_Darpa import *
+from models.Convert_to_darpa_xml import *
 
 uid = uuid.uuid4().get_hex()[:6]
 
@@ -143,6 +145,14 @@ def main(args):
                 else:
                     # TODO: FILL THIS FUNCTION
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
+                    pred_output_fname = "../eval/%s_pred_output.conll" % (str(uid))
+                    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (str(uid))
+                    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (str(uid))
+                    run_program(pred_output_fname,pred_darpa_output_fname,args.setEconll)
+
+                    run_program_darpa(pred_darpa_output_fname,final_darpa_output_fname)
+                    # run the scoring script after verifying above two
+
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
                     best_results = [acc, precision, recall, f1]
