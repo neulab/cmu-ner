@@ -2,9 +2,9 @@ import sys
 import argparse
 import codecs
 
-def run_program(args):
-    if args.input is not None and args.setEconll is not None:
-        with codecs.open(args.input, 'r',encoding='utf-8', errors='ignore') as input_file:
+def run_program(input, output, setEconll):
+    if input is not None and setEconll is not None:
+        with codecs.open(input, 'r',encoding='utf-8', errors='ignore') as input_file:
             lines = input_file.readlines()
         tags = []
         for i, line in enumerate(lines):
@@ -17,10 +17,10 @@ def run_program(args):
 
         output_lines = lines
 
-        with codecs.open(args.setEconll, 'r',encoding='utf-8', errors='ignore') as input_file:
+        with codecs.open(setEconll, 'r',encoding='utf-8', errors='ignore') as input_file:
             lines = input_file.readlines()
         assert len(output_lines) == len(lines)
-        with codecs.open(args.output,'w',encoding='utf-8') as output_file:
+        with codecs.open(output,'w',encoding='utf-8') as output_file:
             ctr = -1
             for line in lines:
                 if len(line) > 2:
@@ -41,4 +41,4 @@ if __name__ == "__main__":
     parser.add_argument("--setEconll", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
-    run_program(args)
+    #run_program(args)
