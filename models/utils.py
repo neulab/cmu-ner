@@ -87,20 +87,20 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
         word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim), size=dim))
 
     print "length of dict: ", len(word_to_id)
+
+    pretrain_word_emb = {}
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
         if len(items) == dim +1:
             try:
                 assert len(items) == dim + 1
-                if items[0] not in word_to_id:
-                     word_to_id[items[0]] = len(word_to_id)
-                     word_emb.append(np.asarray(items[1:]).astype(np.float32))
-                     assert len(word_to_id) == len(word_emb)
-                else:
-                    word_emb[word_to_id[items[0]]] = np.asarray(items[1:]).astype(np.float32)
+                pretrain_word_emb[items[0]] = np.asarray(items[1:]).astype(np.float32)
             except ValueError:
                  continue
-    print "total dict: ", len(word_to_id), len(word_emb)
+
+    for word, id in word_to_id.iteritems():
+        if word.lower() in pretrain_word_emb:
+            word_emb[word_to_id[word]] = pretrain_word_emb[word.lower()]
     emb = np.array(word_emb, dtype=np.float32)
     return emb, word_to_id
 
