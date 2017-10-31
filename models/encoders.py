@@ -48,7 +48,8 @@ class Lookup_Encoder(Encoder):
         Encoder.__init__(self)
         self.padding_token = padding_token
         if pretrain_embedding is not None:
-            self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size), init=dy.NumpyInitializer(pretrain_embedding))
+            # self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size), init=dy.NumpyInitializer(pretrain_embedding))
+            self.lookup_table = model.lookup_parameters_from_numpy(pretrain_embedding)
         else:
             self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
 

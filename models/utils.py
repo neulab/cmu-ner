@@ -91,7 +91,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
     pretrain_word_emb = {}
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
-        if len(items) == dim +1:
+        if len(items) == dim + 1:
             try:
                 assert len(items) == dim + 1
                 pretrain_word_emb[items[0]] = np.asarray(items[1:]).astype(np.float32)
