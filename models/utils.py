@@ -7,7 +7,7 @@ import cPickle as pkl
 import codecs
 import math
 np.random.seed(1)
-
+import operator
 import re
 MAX_CHAR_LENGTH = 45
 
@@ -86,8 +86,6 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
     for _ in range(len(word_to_id)):
         word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim), size=dim))
 
-    print "length of dict: ", len(word_to_id)
-
     pretrain_word_emb = {}
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
@@ -102,6 +100,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
         if word.lower() in pretrain_word_emb:
             word_emb[id] = pretrain_word_emb[word.lower()]
     emb = np.array(word_emb, dtype=np.float32)
+    print  "length of dict: ", len(word_to_id)
     return emb, word_to_id
 
 
