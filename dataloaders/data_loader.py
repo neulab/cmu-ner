@@ -50,8 +50,6 @@ class NER_DataLoader():
         self.word_vocab_size = len(self.id_to_word)
         self.char_vocab_size = len(self.id_to_char)
 
-        print self.word_to_id
-        print self.id_to_word
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
 
     @staticmethod

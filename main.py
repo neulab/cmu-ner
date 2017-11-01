@@ -55,6 +55,7 @@ def evaluate(data_loader, path, model):
     output = open(eval_output_fname, "r").read().strip()
     print output
     os.system("rm %s" % (eval_output_fname))
+    os.system("rm %s" % (pred_output_fname))
 
     return acc, precision, recall, f1
 
