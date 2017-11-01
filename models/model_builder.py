@@ -46,7 +46,8 @@ class vanilla_NER_CRF_model(Model):
 
         self.birnn_encoder = BiRNN_Encoder(self.model, birnn_input_dim, hidden_dim, dropout_rate)
 
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
+        # self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
 
     def forward(self, sents, char_sents, feats, training=True):
         char_embs = self.char_cnn_encoder.encode(char_sents, training=training)

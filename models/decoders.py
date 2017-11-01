@@ -148,4 +148,36 @@ class chain_CRF_decoder(Decoder):
         return best_path_score, best_path
 
     def cal_accuracy(self, pred_path, true_path):
-        return np.sum(np.equal(pred_path, true_path).astype(np.float32))/len(pred_path)
+        return np.sum(np.equal(pred_path, true_path).astype(np.float32)) / len(pred_path)
+
+
+class classifier(Decoder):
+    def __init__(self, model, input_dim, tag_size):
+        self.W_softmax = model.add_parameters((tag_size, input_dim))
+        self.b_softmax = model.add_parameters((tag_size))
+
+    def decode_loss(self, src_encoding, tgt_tags):
+        batch_size = len(tgt_tags)
+        tgt_tags, tgt_mask = transpose_input(tgt_tags, 0)
+
+        assert len(src_encoding) == len(tgt_tags)
+
+        W_softmax = dy.parameter(self.W_softmax)
+        b_softmax = dy.parameter(self.b_softmax)
+
+        predictions = [dy.affine_transform([b_softmax, W_softmax, src_emb]) for src_emb in src_encoding]
+
+        losses = [dy.pickneglogsoftmax_batch(pred, tgt) for pred, tgt in zip(predictions, tgt_tags)]
+
+        loss = dy.sum_batches(dy.esum(losses)) / (batch_size * len(src_encoding))
+
+        return loss
+
+    def decoding(self, src_encoding):
+        W_softmax = dy.parameter(self.W_softmax)
+        b_softmax = dy.parameter(self.b_softmax)
+        predictions = [dy.affine_transform([b_softmax, W_softmax, src_emb]) for src_emb in src_encoding]
+
+        predictions = [np.argmax(pred.npvalue()) for pred in predictions]
+
+        return None, predictions

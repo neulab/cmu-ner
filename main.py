@@ -107,7 +107,8 @@ def main(args):
 
     model = vanilla_NER_CRF_model(args, ner_data_loader)
     # model = debug_vanilla_NER_CRF_model(args, ner_data_loader)
-    trainer = dy.MomentumSGDTrainer(model.model, 0.015, 0.9)
+    inital_lr = 0.1
+    trainer = dy.MomentumSGDTrainer(model.model, inital_lr, 0.9)
 
     def _check_batch_token(batch, id_to_vocab):
         for line in batch:
@@ -130,8 +131,11 @@ def main(args):
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
             loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, training=True)
             loss_val = loss.value()
-            cum_loss += loss_val * len(b_sents)
-            tot_example += len(b_sents)
+            # cum_loss += loss_val * len(b_sents)
+            # tot_example += len(b_sents)
+
+            cum_loss += loss_val * len(b_sents) * len(b_sents[0])
+            tot_example += len(b_sents) * len(b_sents[0])
 
             updates += 1
             loss.backward()
@@ -168,8 +172,8 @@ def main(args):
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
-        print("Epoch = %d, Learning Rate = %f." % (epoch, 0.015/(1+epoch*lr_decay)))
-        trainer = dy.MomentumSGDTrainer(model.model, 0.015/(1+epoch*lr_decay))
+        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
+        trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
 
     # #Making output ready for Darpa format
     # ## evaluation
@@ -184,7 +188,8 @@ if __name__ == "__main__":
     parser.add_argument("--dynet-seed", default=5783287, type=int)
 
     parser.add_argument("--lang", default="english", help="the target language")
-    parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
+    # parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
+    parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
 

@@ -42,6 +42,6 @@ def transform(ifile, ofile):
 
 
 if __name__ == '__main__':
-	transform('eng.train.bio.conll', 'eng.train.bioes.conll')
-	transform('eng.dev.bio.conll', 'eng.dev.bioes.conll')
-	transform('eng.test.bio.conll', 'eng.test.bioes.conll')
+	transform('../datasets/english/eng.train.bio.conll', '../datasets/english/eng.train.bioes.conll')
+	transform('../datasets/english/eng.dev.bio.conll',   '../datasets/english/eng.dev.bioes.conll')
+	transform('../datasets/english/eng.test.bio.conll',  '../datasets/english/eng.test.bioes.conll')

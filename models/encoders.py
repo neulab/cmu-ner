@@ -148,7 +148,7 @@ class BiRNN_Encoder(Encoder):
                  vocab_size=0,
                  emb_size=0,
                  layer=1,
-                 rnn="lstm"):
+                 rnn="gru"):
         Encoder.__init__(self)
         # self.birnn = dy.BiRNNBuilder(layer, input_dim, hidden_dim, model, dy.LSTMBuilder if rnn == "lstm" else dy.GRUBuilder)
         self.fwd_RNN = dy.VanillaLSTMBuilder(layer, input_dim, hidden_dim, model) if rnn == "lstm" else dy.GRUBuilder(layer, input_dim, hidden_dim, model)
