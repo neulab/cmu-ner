@@ -17,7 +17,7 @@ def evaluate(data_loader, path, model):
     i = 0
     for sent, char_sent, tgt_tag, discrete_feature in zip(sents, char_sents, tgt_tags, discrete_features):
         sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature)
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature, training=False)
 
         assert len(best_path) == len(tgt_tag)
         # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
@@ -104,6 +104,7 @@ def main(args):
     batch_size = args.batch_size
 
     model = vanilla_NER_CRF_model(args, ner_data_loader)
+    # model = debug_vanilla_NER_CRF_model(args, ner_data_loader)
     trainer = dy.MomentumSGDTrainer(model.model, 0.015, 0.9)
 
     def _check_batch_token(batch, id_to_vocab):
@@ -125,7 +126,7 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats)
+            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, training=True)
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
@@ -139,6 +140,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
                 else:
                     # TODO: FILL THIS FUNCTION

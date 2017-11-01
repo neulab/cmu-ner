@@ -48,8 +48,9 @@ class Lookup_Encoder(Encoder):
         Encoder.__init__(self)
         self.padding_token = padding_token
         if pretrain_embedding is not None:
-            # self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size), init=dy.NumpyInitializer(pretrain_embedding))
             self.lookup_table = model.lookup_parameters_from_numpy(pretrain_embedding)
+            # print self.lookup_table[0].npvalue()
+            # print pretrain_embedding[0]
         else:
             self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
 
@@ -89,9 +90,9 @@ class CNN_Encoder(Encoder):
         self.W_cnn = model.add_parameters((1, win_size, emb_size, filter_size))
         self.b_cnn = model.add_parameters((filter_size))
 
-    def _cnn_emb(self, input_embs):
+    def _cnn_emb(self, input_embs, training):
         # input_embs: (h, time_step, dim, batch_size), h=1
-        if self.dropout_rate > 0:
+        if self.dropout_rate > 0 and training:
             input_embs = dy.dropout(input_embs, self.dropout_rate)
         W_cnn = dy.parameter(self.W_cnn)
         b_cnn = dy.parameter(self.b_cnn)
@@ -102,7 +103,7 @@ class CNN_Encoder(Encoder):
         # rec_pool_out = dy.rectify(max_pool_out)
         return max_pool_out
 
-    def encode(self, input_seqs, char=True):
+    def encode(self, input_seqs, training=True, char=True):
         batch_size = len(input_seqs)
         sents_embs = []
         if char:
@@ -113,7 +114,7 @@ class CNN_Encoder(Encoder):
                     if len(w) < self.win_size:
                         w += [self.paddding_token] * (self.win_size - len(w))
                     input_embs = dy.concatenate([dy.lookup(self.lookup_emb, c) for c in w], d=1)
-                    w_emb = self._cnn_emb(input_embs)  # (filter_size, 1)
+                    w_emb = self._cnn_emb(input_embs, training)  # (filter_size, 1)
                     sent_emb.append(w_emb)
                 sents_embs.append(sent_emb)
             sents_embs, sents_mask = transpose_and_batch_embs(sents_embs, self.filter_size) # [(filter_size, batch_size)]
@@ -130,7 +131,7 @@ class CNN_Encoder(Encoder):
                     input_embs = dy.transpose(dy.concatenate_cols(sent)) # (time_step, emb_size, bs)
                     input_embs = dy.reshape(input_embs, (1, len(sent), self.emb_size), )
 
-                sent_emb = self._cnn_emb(input_embs)  # (filter_size, 1)
+                sent_emb = self._cnn_emb(input_embs, training)  # (filter_size, 1)
                 sents_embs.append(sent_emb)
             sents_embs = dy.reshape(dy.concatenate(sents_embs, d=1), (self.filter_size,), batch_size =batch_size) # (filter_size, batch_size)
 
@@ -161,14 +162,15 @@ class BiRNN_Encoder(Encoder):
             print "In BiRNN, creating lookup table!"
             self.vocab_emb = model.add_lookup_parameters((vocab_size, emb_size))
 
-    def encode(self, input_seqs):
+    def encode(self, input_seqs, training=True):
         if self.vocab_size > 0:
             # input_seqs = [[w1, w2],[]]
             transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
-            w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.emb_drop_rate) if self.emb_drop_rate > 0. else dy.lookup_batch(self.vocab_emb, wids)
+            w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.emb_drop_rate) if self.emb_drop_rate > 0. and training
+                      else dy.lookup_batch(self.vocab_emb, wids)
                       for wids in transpose_inputs]
         else:
-            w_embs = [dy.dropout(emb, self.emb_drop_rate) if self.emb_drop_rate > 0. else emb for emb in input_seqs]
+            w_embs = [dy.dropout(emb, self.emb_drop_rate) if self.emb_drop_rate > 0. and training else emb for emb in input_seqs]
         # if vocab_size = 0: input_seqs = [(input_dim, batch_size)]
 
         w_embs_r = w_embs[::-1]
@@ -176,6 +178,7 @@ class BiRNN_Encoder(Encoder):
         fwd_vectors = self.fwd_RNN.initial_state().transduce(w_embs)
         bwd_vectors = self.bwd_RNN.initial_state().transduce(w_embs_r)[::-1]
 
-        birnn_outputs = [dy.dropout(dy.concatenate([fwd_v, bwd_v]), self.drop_out_rate) if self.drop_out_rate > 0.0 else dy.concatenate([fwd_v, bwd_v])
+        birnn_outputs = [dy.dropout(dy.concatenate([fwd_v, bwd_v]), self.drop_out_rate) if self.drop_out_rate > 0.0 and training
+                         else dy.concatenate([fwd_v, bwd_v])
                          for (fwd_v, bwd_v) in zip(fwd_vectors, bwd_vectors)]
         return birnn_outputs
