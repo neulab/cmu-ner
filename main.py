@@ -143,7 +143,6 @@ def main(args):
             if updates % valid_freq == 0:
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
                 else:
                     # TODO: FILL THIS FUNCTION
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
