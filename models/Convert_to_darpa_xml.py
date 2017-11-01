@@ -12,10 +12,10 @@ def print_entities(fout,entities, curr_docum, curr_anot):
           entities[1] + '\t' + 'NAM' + '\t' + '1.0' + "\n")
 
 
-def run_program(args):
+def run_program_darpa(input, output):
     reload(sys)
     sys.setdefaultencoding('utf-8')
-    if args.input is not None and args.output is not None:
+    if input is not None and output is not None:
         with codecs.open(args.input, encoding='utf-8', mode='r') as input_file:
             lines = input_file.readlines()
 
@@ -26,16 +26,16 @@ def run_program(args):
         fout = codecs.open(args.output,'w')
         for i, line in enumerate(lines):
             if len(line) > 2:
-                sys.stderr.write('Line number: ' + str(i + 1) + '\n')
-                sys.stderr.flush()
+                print 'Line number: ' + str(i + 1) + '\n'
+                #sys.stderr.flush()
                 line_split = line.strip().split()
                 if curr_docum != line_split[3]:
                     curr_docum = line_split[3]
                     curr_anot = 1
                     # print ''
                 if len(line_split) != 11:
-                    sys.stderr.write(line)
-                    sys.stderr.write('Error in line: ' + str(i + 1) + '\n')
+                    print line
+                    print 'Error in line: ' + str(i + 1) + '\n'
                     assert len(line_split) == 11
                 if line_split[-1][0] == 'B':
                     if in_entity:
@@ -57,7 +57,7 @@ def run_program(args):
                     entities[2] = int(line_split[-5])
                     entities[3] = int(line_split[-4])
                 elif line_split[-1][0] == 'I':
-                    sys.stderr.write('line num: ' + str(i + 1) + '\n')
+                    print 'line num: ' + str(i + 1) + '\n'
                     assert in_entity and len(entities[0]) > 0 and not (entities[0] is None) and ''.join(
                         line_split[-1][2:]) == entities[1] and entities[2] >= 0 and entities[3] >= 0
                     entities[0].append(line_split[0])
@@ -75,7 +75,7 @@ def run_program(args):
                         in_entity = False
             else:
                 if in_entity:
-                    sys.stderr.write('We are in an entity and met sentence boundary, line: ' + str(i + 1) + '\n')
+                    print 'We are in an entity and met sentence boundary, line: ' + str(i + 1) + '\n'
                     print_entities(fout,entities, curr_docum, curr_anot)
                     entities[0] = []
                     entities[1] = None
@@ -90,4 +90,4 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
-    run_program(args)
+    run_program_darpa(args.input, args.output)
