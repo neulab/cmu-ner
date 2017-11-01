@@ -151,6 +151,8 @@ def main(args):
                     run_program(pred_output_fname,pred_darpa_output_fname,args.setEconll)
 
                     run_program_darpa(pred_darpa_output_fname,final_darpa_output_fname)
+
+                    os.system("bash ../../ner_score/score_tig.sh ../eval/%s" % (final_darpa_output_fname))
                     # run the scoring script after verifying above two
 
                 if len(valid_history) == 0 or f1 > max(valid_history):

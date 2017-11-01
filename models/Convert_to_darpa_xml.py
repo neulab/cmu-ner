@@ -13,8 +13,8 @@ def print_entities(fout,entities, curr_docum, curr_anot):
 
 
 def run_program_darpa(input, output):
-    #reload(sys)
-    #sys.setdefaultencoding('utf-8')
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
     if input is not None and output is not None:
         with codecs.open(args.input, encoding='utf-8', mode='r') as input_file:
             lines = input_file.readlines()
@@ -90,4 +90,4 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
-    #run_program(args)
+    run_program_darpa(args.input, args.output)
