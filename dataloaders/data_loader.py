@@ -26,10 +26,12 @@ class NER_DataLoader():
             print("Done!")
         else:
             self.tag_to_id, self.word_to_id, self.char_to_id = self.read_file()
+            # FIXME: Remember dictionary value for char and word has been shifted by 1
+            self.word_to_id['<unk>'] = len(self.word_to_id) + 1
+            self.char_to_id['<unk>'] = len(self.char_to_id) + 1
+
             self.word_to_id['<eos>'] = 0
             self.char_to_id['<pad>'] = 0
-            self.word_to_id['<unk>'] = len(self.word_to_id)
-            self.char_to_id['<unk>'] = len(self.char_to_id)
 
             pkl_dump(self.tag_to_id, self.tag_vocab_path)
             pkl_dump(self.char_to_id, self.char_vocab_path)
@@ -55,10 +57,6 @@ class NER_DataLoader():
     @staticmethod
     def exists(path):
         return os.path.exists(path)
-
-    def dict_add(self, vocab, item, shift=0):
-        if item not in vocab:
-            vocab[item] = len(vocab) + shift
 
     def read_one_line(self, line, tag_list, word_list, char_list):
         for w in line:
