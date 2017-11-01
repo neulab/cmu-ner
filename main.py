@@ -107,7 +107,7 @@ def main(args):
 
     model = vanilla_NER_CRF_model(args, ner_data_loader)
     # model = debug_vanilla_NER_CRF_model(args, ner_data_loader)
-    inital_lr = 0.1
+    inital_lr = args.init_lr
     trainer = dy.MomentumSGDTrainer(model.model, inital_lr, 0.9)
 
     def _check_batch_token(batch, id_to_vocab):
@@ -131,11 +131,11 @@ def main(args):
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
             loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, training=True)
             loss_val = loss.value()
-            # cum_loss += loss_val * len(b_sents)
-            # tot_example += len(b_sents)
+            cum_loss += loss_val * len(b_sents)
+            tot_example += len(b_sents)
 
-            cum_loss += loss_val * len(b_sents) * len(b_sents[0])
-            tot_example += len(b_sents) * len(b_sents[0])
+            # cum_loss += loss_val * len(b_sents) * len(b_sents[0])
+            # tot_example += len(b_sents) * len(b_sents[0])
 
             updates += 1
             loss.backward()
@@ -207,6 +207,7 @@ if __name__ == "__main__":
     parser.add_argument("--valid_freq", default=500, type=int)
     parser.add_argument("--tot_epochs", default=100, type=int)
     parser.add_argument("--batch_size", default=10, type=int)
+    parser.add_argument("--init_lr", default=0.015, type=float)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
 
