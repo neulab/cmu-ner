@@ -44,19 +44,27 @@ class Encoder():
 
 
 class Lookup_Encoder(Encoder):
-    def __init__(self, model, vocab_size, emb_size, padding_token=None, pretrain_embedding=None):
+    def __init__(self, model, args, vocab_size, emb_size, padding_token=None, pretrain_embedding=None):
         Encoder.__init__(self)
         self.padding_token = padding_token
+        self.map_pretrain = args.map_pretrain
+        if args.map_pretrain:
+            self.W_map = model.add_parameters((args.map_dim, emb_size))
+            self.b_map = model.add_parameters(args.map_dim)
+            self.b_map.zero()                                                                                                                                                               
         if pretrain_embedding is not None:
             self.lookup_table = model.lookup_parameters_from_numpy(pretrain_embedding)
-            # print self.lookup_table[0].npvalue()
-            # print pretrain_embedding[0]
         else:
             self.lookup_table = model.add_lookup_parameters((vocab_size, emb_size))
 
     def encode(self, input_seqs):
         transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
-        embs = [dy.lookup_batch(self.lookup_table, wids) for wids in transpose_inputs]
+        embs = [dy.lookup_batch(self.lookup_table, wids).expr(update=False) for wids in transpose_inputs]
+        # TODO: initialize <unk> with ones vector
+        if self.map_pretrain:
+            W_map = dy.parameter(self.W_map)
+            b_map = dy.parameter(self.b_map)
+            embs = [dy.affine_transform([b_map, W_map, emb]) for emb in embs]
         return embs
 
 
@@ -89,6 +97,7 @@ class CNN_Encoder(Encoder):
             self.lookup_emb = model.add_lookup_parameters((vocab_size, 1, 1, emb_size))
         self.W_cnn = model.add_parameters((1, win_size, emb_size, filter_size))
         self.b_cnn = model.add_parameters((filter_size))
+        self.b_cnn.zero()
 
     def _cnn_emb(self, input_embs, training):
         # input_embs: (h, time_step, dim, batch_size), h=1

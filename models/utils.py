@@ -83,9 +83,11 @@ def fopen(filename, mode='r'):
 
 def get_pretrained_emb(path_to_emb, word_to_id, dim):
     word_emb = []
+    print "Loading pretrained embeddings from %s." % (path_to_emb)
     for _ in range(len(word_to_id)):
         word_emb.append(np.random.uniform(-math.sqrt(3.0/dim), math.sqrt(3.0/dim), size=dim))
 
+    print "length of dict: ", len(word_to_id)
     pretrain_word_emb = {}
     for line in codecs.open(path_to_emb, "r", "utf-8"):
         items = line.strip().split()
@@ -94,13 +96,18 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
                 assert len(items) == dim + 1
                 pretrain_word_emb[items[0]] = np.asarray(items[1:]).astype(np.float32)
             except ValueError:
-                 continue
+                continue
 
+    not_covered = 0
     for word, id in word_to_id.iteritems():
         if word.lower() in pretrain_word_emb:
             word_emb[id] = pretrain_word_emb[word.lower()]
+        else:
+            not_covered += 1
+
     emb = np.array(word_emb, dtype=np.float32)
-    print  "length of dict: ", len(word_to_id)
+
+    print "Word number not covered in pretrain embedding: ", not_covered
     return emb, word_to_id
 
 

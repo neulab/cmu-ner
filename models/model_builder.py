@@ -40,10 +40,10 @@ class vanilla_NER_CRF_model(Model):
         self.char_cnn_encoder = CNN_Encoder(self.model, char_emb_dim, cnn_win_size, cnn_filter_size,
                                             0.0, char_vocab_size, data_loader.char_padding_token)
         if args.pretrain_emb_path is None:
-            self.word_lookup = Lookup_Encoder(self.model, word_vocab_size, word_emb_dim, word_padding_token)
+            self.word_lookup = Lookup_Encoder(self.model, args, word_vocab_size, word_emb_dim, word_padding_token)
         else:
             print "Using pretrained word embedding!"
-            self.word_lookup = Lookup_Encoder(self.model, word_vocab_size, word_emb_dim, word_padding_token, data_loader.pretrain_word_emb)
+            self.word_lookup = Lookup_Encoder(self.model, args, word_vocab_size, word_emb_dim, word_padding_token, data_loader.pretrain_word_emb)
             # print data_loader.word_to_id
             # for i in range(len(data_loader.word_to_id)):
             #     print i, data_loader.id_to_word[i]

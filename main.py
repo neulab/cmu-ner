@@ -11,7 +11,7 @@ uid = uuid.uuid4().get_hex()[:6]
 
 
 def evaluate(data_loader, path, model):
-    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang)
+    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang, training=False)
 
     # tot_acc = 0.0
     predictions = []
@@ -203,6 +203,11 @@ if __name__ == "__main__":
     parser.add_argument("--rnn_type", default="lstm", type=str)
     parser.add_argument("--hidden_dim", default=200, type=int)
     parser.add_argument("--layer", default=1, type=int)
+
+    parser.add_argument("--replace_unk_rate", default=0.0, type=float, help="uses when not all words in the test data is covered by the pretrained embedding")
+    parser.add_argument("--remove_singleton", default=False, action="store_true")
+    parser.add_argument("--map_pretrain", default=False, action="store_true")
+    parser.add_argument("--map_dim", default=100, type=int)
 
     parser.add_argument("--dropout_rate", default=0.5, type=float)
     parser.add_argument("--valid_freq", default=500, type=int)
