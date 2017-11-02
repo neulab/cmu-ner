@@ -48,6 +48,7 @@ class Lookup_Encoder(Encoder):
         Encoder.__init__(self)
         self.padding_token = padding_token
         self.map_pretrain = args.map_pretrain
+        self.pretrain_fix = args.pretrain_fix
         if args.map_pretrain:
             self.W_map = model.add_parameters((args.map_dim, emb_size))
             self.b_map = model.add_parameters(args.map_dim)
@@ -60,9 +61,12 @@ class Lookup_Encoder(Encoder):
     def encode(self, input_seqs):
         transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
         embs = [dy.lookup_batch(self.lookup_table, wids) for wids in transpose_inputs]
-        # TODO: initialize <unk> with ones vector
-        if self.map_pretrain:
+        if self.pretrain_fix:
             embs = [dy.nobackprop(emb) for emb in embs]
+        # TODO: initialize <unk> with ones vector, initialize W_map with identity matrix
+        if self.map_pretrain:
+            if not self.pretrain_fix:
+                embs = [dy.nobackprop(emb) for emb in embs]
             W_map = dy.parameter(self.W_map)
             b_map = dy.parameter(self.b_map)
             embs = [dy.affine_transform([b_map, W_map, emb]) for emb in embs]

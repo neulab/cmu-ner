@@ -99,7 +99,6 @@ def evaluate_lr(data_loader, path, model):
                 f1 = columns[-2]
                 break
 
-
     return 0, prec, recall, f1
 
 
@@ -216,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument("--remove_singleton", default=False, action="store_true")
     parser.add_argument("--map_pretrain", default=False, action="store_true")
     parser.add_argument("--map_dim", default=100, type=int)
+    parser.add_argument("--pretrain_fix", default=False, action="store_true")
 
     parser.add_argument("--dropout_rate", default=0.5, type=float)
     parser.add_argument("--valid_freq", default=500, type=int)
