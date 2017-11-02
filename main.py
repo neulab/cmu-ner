@@ -66,7 +66,7 @@ def evaluate_lr(data_loader, path, model):
     i = 0
     for sent, char_sent, discrete_feature in zip(sents, char_sents, discrete_features):
         sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature)
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature,training=False)
 
         predictions.append(best_path)
 
@@ -81,7 +81,25 @@ def evaluate_lr(data_loader, path, model):
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
-    return 0, 0, 0, 0
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (str(uid))
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (str(uid))
+    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+
+    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+
+    os.system("bash ../../ner_score/score_tig.sh ../eval/%s" % (final_darpa_output_fname))
+
+    with codecs.open(final_darpa_output_fname,'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec= columns[-4]
+                recall = columns[-3]
+                f1 = columns[-2]
+                break
+
+
+    return 0, prec, recall, f1
 
 
 def main(args):
@@ -148,17 +166,7 @@ def main(args):
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
                 else:
-                    # TODO: FILL THIS FUNCTION
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
-                    pred_output_fname = "../eval/%s_pred_output.conll" % (str(uid))
-                    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (str(uid))
-                    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (str(uid))
-                    run_program(pred_output_fname,pred_darpa_output_fname,args.setEconll)
-
-                    run_program_darpa(pred_darpa_output_fname,final_darpa_output_fname)
-
-                    os.system("bash ../../ner_score/score_tig.sh ../eval/%s" % (final_darpa_output_fname))
-                    # run the scoring script after verifying above two
 
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
