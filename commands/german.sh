@@ -17,5 +17,5 @@ python ../main.py \
     --char_emb_dim 30\
     --char_hidden_dim 25 \
     --lang german \
-    --replace_unk_rate 0.0 \
+    --replace_unk_rate 0.5 \
     --valid_freq 1300

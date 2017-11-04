@@ -100,7 +100,9 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     not_covered = 0
     for word, id in word_to_id.iteritems():
-        if word.lower() in pretrain_word_emb:
+        if word in pretrain_word_emb:
+            word_emb[id] = pretrain_word_emb[word]
+        elif word.lower() in pretrain_word_emb:
             word_emb[id] = pretrain_word_emb[word.lower()]
         else:
             not_covered += 1
