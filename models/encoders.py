@@ -157,7 +157,8 @@ class BiRNN_Encoder(Encoder):
                  model,
                  input_dim,
                  hidden_dim,
-                 dropout_rate=0.5,
+                 emb_dropout_rate=0.3,
+                 output_dropout_rate=0.5,
                  padding_token=None,
                  vocab_size=0,
                  emb_size=0,
@@ -170,13 +171,20 @@ class BiRNN_Encoder(Encoder):
 
         self.vocab_size =  vocab_size
         self.padding_token = padding_token
-        self.drop_out_rate = dropout_rate
-        self.emb_drop_rate = 0.2
+        self.drop_out_rate = output_dropout_rate
+        self.emb_drop_rate = emb_dropout_rate
+        self.hidden_dim = hidden_dim
         if vocab_size > 0:
             print "In BiRNN, creating lookup table!"
             self.vocab_emb = model.add_lookup_parameters((vocab_size, emb_size))
 
-    def encode(self, input_seqs, training=True):
+    def encode(self, input_seqs, training=True, char=False):
+        if char:
+            return self.encode_word(input_seqs, training=training)
+        else:
+            return self.encode_seq(input_seqs, training=training)
+
+    def encode_seq(self, input_seqs, training=True, char=False):
         if self.vocab_size > 0:
             # input_seqs = [[w1, w2],[]]
             transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
@@ -192,7 +200,23 @@ class BiRNN_Encoder(Encoder):
         fwd_vectors = self.fwd_RNN.initial_state().transduce(w_embs)
         bwd_vectors = self.bwd_RNN.initial_state().transduce(w_embs_r)[::-1]
 
+        if char:
+            return dy.concatenate([fwd_vectors[-1], bwd_vectors[0]])
+
         birnn_outputs = [dy.dropout(dy.concatenate([fwd_v, bwd_v]), self.drop_out_rate) if self.drop_out_rate > 0.0 and training
                          else dy.concatenate([fwd_v, bwd_v])
                          for (fwd_v, bwd_v) in zip(fwd_vectors, bwd_vectors)]
         return birnn_outputs
+
+    def encode_word(self, input_seqs, training=True):
+        # embedding dropout rate is 0.0, because we dropout at the later stage of RNN
+        sents_embs = []
+
+        for sent in input_seqs:
+            sent_emb = []
+            for w in sent:
+                w_emb = self.encode_seq([w], training=training, char=True)
+                sent_emb.append(w_emb)
+            sents_embs.append(sent_emb)
+        sents_embs, sents_mask = transpose_and_batch_embs(sents_embs, self.hidden_dim*2)  # [(hidden_dim*2, batch_size)]
+        return sents_embs

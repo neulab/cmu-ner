@@ -123,7 +123,13 @@ def main(args):
     valid_freq = args.valid_freq
     batch_size = args.batch_size
 
-    model = vanilla_NER_CRF_model(args, ner_data_loader)
+    if args.model_arc == "char_cnn":
+        model = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+        model = BiRNN_CRF_model(args, ner_data_loader)
+    else:
+        raise NotImplementedError
+
     # model = debug_vanilla_NER_CRF_model(args, ner_data_loader)
     inital_lr = args.init_lr
     trainer = dy.MomentumSGDTrainer(model.model, inital_lr, 0.9)
@@ -201,6 +207,7 @@ if __name__ == "__main__":
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
 
+    parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn"], type=str)
     parser.add_argument("--tag_emb_dim", default=50, type=int)
     parser.add_argument("--pos_emb_dim", default=50, type=int)
     parser.add_argument("--char_emb_dim", default=30, type=int)
@@ -208,7 +215,8 @@ if __name__ == "__main__":
     parser.add_argument("--cnn_filter_size", default=30, type=int)
     parser.add_argument("--cnn_win_size", default=3, type=int)
     parser.add_argument("--rnn_type", default="lstm", type=str)
-    parser.add_argument("--hidden_dim", default=200, type=int)
+    parser.add_argument("--hidden_dim", default=200, type=int, help="token level rnn hidden dim")
+    parser.add_argument("--char_hidden_dim", default=25, type=int, help="char level rnn hidden dim")
     parser.add_argument("--layer", default=1, type=int)
 
     parser.add_argument("--replace_unk_rate", default=0.0, type=float, help="uses when not all words in the test data is covered by the pretrained embedding")
@@ -217,7 +225,8 @@ if __name__ == "__main__":
     parser.add_argument("--map_dim", default=100, type=int)
     parser.add_argument("--pretrain_fix", default=False, action="store_true")
 
-    parser.add_argument("--dropout_rate", default=0.5, type=float)
+    parser.add_argument("--output_dropout_rate", default=0.5, type=float, help="dropout applied to the output of birnn before crf")
+    parser.add_argument("--emb_dropout_rate", default=0.3, type=float, help="dropout applied to the input of token-level birnn")
     parser.add_argument("--valid_freq", default=500, type=int)
     parser.add_argument("--tot_epochs", default=100, type=int)
     parser.add_argument("--batch_size", default=10, type=int)
