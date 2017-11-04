@@ -11,7 +11,6 @@ python ../main.py \
     --output_dropout_rate 0.5 \
     --init_lr 0.01 \
     --model_arc char_birnn \
-    --output_dropout_rate 0.0 \
     --tag_emb_dim 100 \
     --hidden_dim 100 \
     --char_emb_dim 30\
