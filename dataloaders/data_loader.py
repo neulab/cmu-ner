@@ -89,7 +89,7 @@ class NER_DataLoader():
         self.singleton_words = set()
         for k, v in a_dict.iteritems():
             if v == 1:
-                self.singleton_words.add(k)
+                self.singleton_words.add(i + shift)
             if remove_singleton:
                 if v > 1:
                     # print k, v
@@ -143,15 +143,7 @@ class NER_DataLoader():
                 fields = w.split()
                 word = fields[0]
                 ner_tag = fields[-1]
-                if training and self.args.replace_unk_rate > 0.0:
-                    if word in self.word_to_id and word in self.singleton_words:
-                        temp_sent.append(self.word_to_id[word] if np.random.uniform(0., 1.) > self.args.replace_unk_rate else self.word_to_id["<unk>"])
-                    elif word in self.word_to_id and word not in self.singleton_words:
-                        temp_sent.append(self.word_to_id[word])
-                    else:
-                        temp_sent.append(self.word_to_id["<unk>"])
-                else:
-                    temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
             sents.append(temp_sent)

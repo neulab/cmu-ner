@@ -102,6 +102,19 @@ def evaluate_lr(data_loader, path, model):
     return 0, prec, recall, f1
 
 
+def replace_singletons(data_loader, sents, replace_rate):
+    new_batch_sents = []
+    for sent in sents:
+        new_sent = []
+        for word in sent:
+            if word in data_loader.singleton_words:
+                new_sent.append(word if np.random.uniform(0., 1.) > replace_rate else data_loader.word_to_id["<unk>"])
+            else:
+                new_sent.append(word)
+        new_batch_sents.append(new_sent)
+    return new_batch_sents
+
+
 def main(args):
     ner_data_loader = NER_DataLoader(args)
 
@@ -150,6 +163,8 @@ def main(args):
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
             dy.renew_cg()
 
+            if args.replace_unk_rate > 0.0:
+                b_sents = replace_singletons(ner_data_loader, b_sents, args.replace_unk_rate)
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
@@ -214,7 +229,7 @@ if __name__ == "__main__":
     parser.add_argument("--word_emb_dim", default=100, type=int)
     parser.add_argument("--cnn_filter_size", default=30, type=int)
     parser.add_argument("--cnn_win_size", default=3, type=int)
-    parser.add_argument("--rnn_type", default="lstm", type=str)
+    parser.add_argument("--rnn_type", default="lstm", choices=['lstm', 'gru'], type=str)
     parser.add_argument("--hidden_dim", default=200, type=int, help="token level rnn hidden dim")
     parser.add_argument("--char_hidden_dim", default=25, type=int, help="char level rnn hidden dim")
     parser.add_argument("--layer", default=1, type=int)
