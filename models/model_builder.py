@@ -25,7 +25,10 @@ class vanilla_NER_CRF_model(CRF_Model):
         char_emb_dim = args.char_emb_dim
         word_emb_dim = args.word_emb_dim
         tag_emb_dim = args.tag_emb_dim
-        birnn_input_dim = args.cnn_filter_size + args.word_emb_dim
+        if args.map_pretrain:
+            birnn_input_dim = args.char_hidden_dim * 2 + args.map_dim
+        else:
+            birnn_input_dim = args.cnn_filter_size + args.word_emb_dim
         hidden_dim = args.hidden_dim
         src_ctx_dim = args.hidden_dim * 2
 
@@ -96,7 +99,10 @@ class BiRNN_CRF_model(CRF_Model):
         char_emb_dim = args.char_emb_dim
         word_emb_dim = args.word_emb_dim
         tag_emb_dim = args.tag_emb_dim
-        birnn_input_dim = args.char_hidden_dim * 2 + args.word_emb_dim
+        if args.map_pretrain:
+            birnn_input_dim = args.char_hidden_dim * 2 + args.map_dim
+        else:
+            birnn_input_dim = args.char_hidden_dim * 2 + args.word_emb_dim
         hidden_dim = args.hidden_dim
         char_hidden_dim = args.char_hidden_dim
         src_ctx_dim = args.hidden_dim * 2

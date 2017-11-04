@@ -201,16 +201,11 @@ def main(args):
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
-        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
-        trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
+        if args.lr_decay:
+            print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
+            trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
 
-    # #Making output ready for Darpa format
-    # ## evaluation
-    # if args.setEconll is not None:
-    #     os.system("python ../models/Convert_Output_Darpa.py --input ../eval/pred_output.conll  --setEconll %s  --output ../eval/conv_to_darpa.conll" % (args.setEconll))
-    #     #os.system("python /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/models/Convert_to_darpa_xml.py --input /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conv_to_darpa.conll --output /Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/darpa_Ready.xml")
 
-# add task specific trainer and args
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
@@ -246,6 +241,7 @@ if __name__ == "__main__":
     parser.add_argument("--tot_epochs", default=100, type=int)
     parser.add_argument("--batch_size", default=10, type=int)
     parser.add_argument("--init_lr", default=0.015, type=float)
+    parser.add_argument("--lr_decay", default=False, action="store_true")
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
 
