@@ -31,7 +31,8 @@ class vanilla_NER_CRF_model(CRF_Model):
 
         cnn_filter_size = args.cnn_filter_size
         cnn_win_size = args.cnn_win_size
-        dropout_rate = args.dropout_rate
+        output_dropout_rate = args.output_dropout_rate
+        emb_dropout_rate = args.emb_dropout_rate
 
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
@@ -53,7 +54,8 @@ class vanilla_NER_CRF_model(CRF_Model):
             # for i in range(len(data_loader.word_to_id)):
             #     print self.word_lookup.lookup_table[i].npvalue()
             # raw_input()
-        self.birnn_encoder = BiRNN_Encoder(self.model, birnn_input_dim, hidden_dim, dropout_rate)
+        self.birnn_encoder = BiRNN_Encoder(self.model, birnn_input_dim, hidden_dim, emb_dropout_rate=emb_dropout_rate,
+                                           output_dropout_rate=output_dropout_rate)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
         self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
