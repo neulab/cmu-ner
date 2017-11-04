@@ -58,12 +58,21 @@ def run_program_darpa(input, output):
                     entities[3] = int(line_split[-4])
                 elif line_split[-1][0] == 'I':
                     print 'line num: ' + str(i + 1) + '\n'
-                    assert in_entity and len(entities[0]) > 0 and not (entities[0] is None) and ''.join(
-                        line_split[-1][2:]) == entities[1] and entities[2] >= 0 and entities[3] >= 0
-                    entities[0].append(line_split[0])
-                    assert entities[2] >= 0
-                    assert int(line_split[-4]) > entities[3]
-                    entities[3] = int(line_split[-4])
+
+                    if not in_entity or (len(entities[0]) > 0  and line_split[-1][2:] != entities[1]):# when first tag is I-PER treat it as B-PER
+                        in_entity = True
+                        entities[0].append(line_split[0])
+                        entities[1] = ''.join(line_split[-1][2:])
+                        entities[2] = int(line_split[-5])
+                        entities[3] = int(line_split[-4])
+
+                    else:
+                        assert in_entity and len(entities[0]) > 0 and not (entities[0] is None) and ''.join(
+                            line_split[-1][2:]) == entities[1] and entities[2] >= 0 and entities[3] >= 0
+                        entities[0].append(line_split[0])
+                        assert entities[2] >= 0
+                        assert int(line_split[-4]) > entities[3]
+                        entities[3] = int(line_split[-4])
                 elif line_split[-1][0] == 'O':
                     if in_entity:
                         print_entities(fout,entities, curr_docum, curr_anot)
