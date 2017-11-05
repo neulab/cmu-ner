@@ -30,8 +30,12 @@ class NER_DataLoader():
             print("Done!")
         else:
             print("Generating vocabs from training file ....")
-            paths_to_read = [self.train_path, self.test_path, self.dev_path]
-            self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+            if not self.args.isLr:
+                paths_to_read = [self.train_path, self.test_path, self.dev_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+            else:
+                paths_to_read = [self.train_path, self.dev_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,self.test_path)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
@@ -121,6 +125,45 @@ class NER_DataLoader():
 
         for path in paths:
             _read_a_file(path)
+
+        tag_vocab = self.get_vocab_from_set(tag_set)
+        word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
+        char_vocab = self.get_vocab_from_set(char_set, 1)
+
+        return tag_vocab, word_vocab, char_vocab
+
+    def read_files_lr(self, paths, test_path):
+        # word_list = []
+        # char_list = []
+        # tag_list = []
+        word_dict = defaultdict(lambda: 0)
+        char_set = set()
+        tag_set = set()
+
+        def _read_a_file(path):
+            with codecs.open(path, "r", "utf-8") as fin:
+                to_read_line = []
+                for line in fin:
+                    if line.strip() == "":
+                        self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                        to_read_line = []
+                    else:
+                        to_read_line.append(line.strip())
+                self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+
+        for path in paths:
+            _read_a_file(path)
+
+        #reading from SetE
+        with codecs.open(test_path, "r", "utf-8") as fin:
+            to_read_line = []
+            for line in fin:
+                fields = line.strip().split()
+                for word in fields:
+                    for c in word:
+                        char_set.add(c)
+                    word_dict[word] += 1
+
 
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
