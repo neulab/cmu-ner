@@ -192,7 +192,7 @@ class NER_DataLoader():
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
-            discrete_features.append(get_feature_w(lang, one_sent)[0] if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
 
         with codecs.open(path, "r", "utf-8") as fin:
             one_sent = []

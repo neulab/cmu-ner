@@ -88,15 +88,18 @@ def evaluate_lr(data_loader, path, model):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash ../../ner_score/score_tig.sh ../eval/%s" % (final_darpa_output_fname))
+    os.system("bash ../../ner_score/score_tir.sh ../eval/%s ../eval/score_file" % (final_darpa_output_fname))
 
-    with codecs.open(final_darpa_output_fname,'r') as fileout:
+    prec=0
+    recall=0
+    f1=0
+    with codecs.open("../eval/score_file",'r') as fileout:
         for line in fileout:
             columns = line.strip().split('\t')
             if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
-                prec= columns[-4]
-                recall = columns[-3]
-                f1 = columns[-2]
+                prec=float(columns[-4])
+                recall =float(columns[-3])
+                f1 = float(columns[-2])
                 break
 
     return 0, prec, recall, f1
