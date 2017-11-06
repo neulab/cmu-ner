@@ -222,13 +222,12 @@ class NER_DataLoader():
             temp_char = []
             temp_discrete = []
             for word in one_sent:
-                if self.use_discrete_feature:
-                    temp_discrete.append(get_feature_w(lang, word))
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
             sents.append(temp_sent)
             char_sents.append(temp_char)
-            discrete_features.append(temp_discrete)
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
