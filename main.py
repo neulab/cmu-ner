@@ -88,7 +88,7 @@ def evaluate_lr(data_loader, path, model):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash ../../ner_score/score_tir.sh ../eval/%s ../eval/score_file" % (final_darpa_output_fname))
+    os.system("bash %s ../eval/%s ../eval/score_file" % (args.score_file, final_darpa_output_fname))
 
     prec=0
     recall=0
@@ -260,5 +260,6 @@ if __name__ == "__main__":
     parser.add_argument("--feature_dim", type=int, default=30)
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None)
+    parser.add_argument("--score_file", type=str, default=None)
     args = parser.parse_args()
     main(args)
