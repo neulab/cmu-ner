@@ -30,8 +30,12 @@ class NER_DataLoader():
             print("Done!")
         else:
             print("Generating vocabs from training file ....")
-            paths_to_read = [self.train_path, self.test_path, self.dev_path]
-            self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+            if not self.args.isLr:
+                paths_to_read = [self.train_path, self.test_path, self.dev_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+            else:
+                paths_to_read = [self.train_path, self.dev_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,self.test_path)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
@@ -128,6 +132,45 @@ class NER_DataLoader():
 
         return tag_vocab, word_vocab, char_vocab
 
+    def read_files_lr(self, paths, test_path):
+        # word_list = []
+        # char_list = []
+        # tag_list = []
+        word_dict = defaultdict(lambda: 0)
+        char_set = set()
+        tag_set = set()
+
+        def _read_a_file(path):
+            with codecs.open(path, "r", "utf-8") as fin:
+                to_read_line = []
+                for line in fin:
+                    if line.strip() == "":
+                        self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                        to_read_line = []
+                    else:
+                        to_read_line.append(line.strip())
+                self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+
+        for path in paths:
+            _read_a_file(path)
+
+        #reading from SetE
+        with codecs.open(test_path, "r", "utf-8") as fin:
+            to_read_line = []
+            for line in fin:
+                fields = line.strip().split()
+                for word in fields:
+                    for c in word:
+                        char_set.add(c)
+                    word_dict[word] += 1
+
+
+        tag_vocab = self.get_vocab_from_set(tag_set)
+        word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
+        char_vocab = self.get_vocab_from_set(char_set, 1)
+
+        return tag_vocab, word_vocab, char_vocab
+
     def get_data_set(self, path, lang, training=True):
         sents = []
         char_sents = []
@@ -149,7 +192,7 @@ class NER_DataLoader():
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
-            discrete_features.append(get_feature_w(lang, one_sent)[0] if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
 
         with codecs.open(path, "r", "utf-8") as fin:
             one_sent = []
@@ -179,13 +222,12 @@ class NER_DataLoader():
             temp_char = []
             temp_discrete = []
             for word in one_sent:
-                if self.use_discrete_feature:
-                    temp_discrete.append(get_feature_w(lang, word))
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
             sents.append(temp_sent)
             char_sents.append(temp_char)
-            discrete_features.append(temp_discrete)
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:

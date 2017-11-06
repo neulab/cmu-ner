@@ -3,6 +3,8 @@ import argparse
 import codecs
 
 def run_program(input, output, setEconll):
+    reload(sys)	
+    sys.setdefaultencoding('utf-8')
     if input is not None and setEconll is not None:
         with codecs.open(input, 'r',encoding='utf-8', errors='ignore') as input_file:
             lines = input_file.readlines()
