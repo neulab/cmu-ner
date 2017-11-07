@@ -26,7 +26,7 @@ class vanilla_NER_CRF_model(CRF_Model):
         word_emb_dim = args.word_emb_dim
         tag_emb_dim = args.tag_emb_dim
         if args.map_pretrain:
-            birnn_input_dim = args.char_hidden_dim * 2 + args.map_dim
+            birnn_input_dim = args.cnn_filter_size + args.map_dim
         else:
             birnn_input_dim = args.cnn_filter_size + args.word_emb_dim
         hidden_dim = args.hidden_dim
