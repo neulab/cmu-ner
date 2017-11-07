@@ -43,4 +43,4 @@ if __name__ == "__main__":
     parser.add_argument("--setEconll", type=str, default=None)
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
-    #run_program(args)
+    run_program(args.input, args.output, args.setEconll)
