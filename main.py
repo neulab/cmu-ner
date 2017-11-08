@@ -88,15 +88,18 @@ def evaluate_lr(data_loader, path, model):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash ../../ner_score/score_tig.sh ../eval/%s" % (final_darpa_output_fname))
+    os.system("bash %s ../eval/%s ../eval/score_file" % (args.score_file, final_darpa_output_fname))
 
-    with codecs.open(final_darpa_output_fname,'r') as fileout:
+    prec=0
+    recall=0
+    f1=0
+    with codecs.open("../eval/score_file",'r') as fileout:
         for line in fileout:
             columns = line.strip().split('\t')
             if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
-                prec= columns[-4]
-                recall = columns[-3]
-                f1 = columns[-2]
+                prec=float(columns[-4])
+                recall =float(columns[-3])
+                f1 = float(columns[-2])
                 break
 
     return 0, prec, recall, f1
@@ -158,6 +161,7 @@ def main(args):
     lr_decay = 0.05
 
     valid_history = []
+    best_results = [0.0 ,0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
@@ -204,6 +208,9 @@ def main(args):
         if args.lr_decay:
             print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
             trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
+
+    print("All Epochs done")
+    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
 if __name__ == "__main__":
@@ -257,5 +264,8 @@ if __name__ == "__main__":
     parser.add_argument("--feature_dim", type=int, default=30)
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None)
+    parser.add_argument("--score_file", type=str, default=None)
     args = parser.parse_args()
+
+    print args
     main(args)

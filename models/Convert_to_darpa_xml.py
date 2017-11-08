@@ -16,14 +16,14 @@ def run_program_darpa(input, output):
     reload(sys)
     sys.setdefaultencoding('utf-8')
     if input is not None and output is not None:
-        with codecs.open(args.input, encoding='utf-8', mode='r') as input_file:
+        with codecs.open(input, encoding='utf-8', mode='r') as input_file:
             lines = input_file.readlines()
 
         entities = [[], None, -1, -1]
         in_entity = False
         curr_docum = None
         curr_anot = 1
-        fout = codecs.open(args.output,'w')
+        fout = codecs.open(output,'w',encoding='utf-8')
         for i, line in enumerate(lines):
             if len(line) > 2:
                 print 'Line number: ' + str(i + 1) + '\n'
