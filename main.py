@@ -161,6 +161,7 @@ def main(args):
     lr_decay = 0.05
 
     valid_history = []
+    best_results = [0.0 ,0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
