@@ -161,6 +161,7 @@ def main(args):
     lr_decay = 0.05
 
     valid_history = []
+    best_results = [0.0 ,0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
         for b_sents, b_char_sents, b_ner_tags, b_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features), batch_size):
@@ -207,6 +208,9 @@ def main(args):
         if args.lr_decay:
             print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
             trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
+
+    print("All Epochs done")
+    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
 if __name__ == "__main__":
