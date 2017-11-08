@@ -207,6 +207,8 @@ def main(args):
         if args.lr_decay:
             print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
             trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
+        print("Epochs done")
+        print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
 if __name__ == "__main__":
