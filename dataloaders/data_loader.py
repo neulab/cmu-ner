@@ -1,8 +1,9 @@
 __author__ = 'chuntingzhou'
-from models.utils import *
-import codecs
 import os
-from models.features import *
+
+from utils.features import *
+from utils.util import *
+
 
 class NER_DataLoader():
     def __init__(self, args):
@@ -156,7 +157,6 @@ class NER_DataLoader():
 
         #reading from SetE
         with codecs.open(test_path, "r", "utf-8") as fin:
-            to_read_line = []
             for line in fin:
                 fields = line.strip().split()
                 for word in fields:
@@ -164,14 +164,13 @@ class NER_DataLoader():
                         char_set.add(c)
                     word_dict[word] += 1
 
-
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
         char_vocab = self.get_vocab_from_set(char_set, 1)
 
         return tag_vocab, word_vocab, char_vocab
 
-    def get_data_set(self, path, lang, training=True):
+    def get_data_set(self, path, lang):
         sents = []
         char_sents = []
         tgt_tags = []
@@ -193,6 +192,8 @@ class NER_DataLoader():
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
             discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+
+            # print len(discrete_features[-1])
 
         with codecs.open(path, "r", "utf-8") as fin:
             one_sent = []
@@ -220,14 +221,12 @@ class NER_DataLoader():
         def add_sent(one_sent):
             temp_sent = []
             temp_char = []
-            temp_discrete = []
             for word in one_sent:
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
             sents.append(temp_sent)
             char_sents.append(temp_char)
             discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
-
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
