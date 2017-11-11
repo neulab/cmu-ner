@@ -80,6 +80,9 @@ def evaluate_lr(data_loader, path, model):
     with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
+                if p not in data_loader.id_to_tag[p]:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
@@ -261,7 +264,6 @@ if __name__ == "__main__":
     parser.add_argument("--tgt_lang_train_path", default="../datasets/english/eng.train.bio.conll", type=str)
 
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
-    parser.add_argument("--pretrain_finetune", default="False", action="store_true")
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--feature_dim", type=int, default=30)
