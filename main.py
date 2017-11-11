@@ -193,6 +193,8 @@ def main(args):
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
                 else:
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
+                    results = [acc, precision, recall, f1]
+                    print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
