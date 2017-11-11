@@ -230,7 +230,7 @@ ex_title = {
         'abbaa',  # Father
         'aba',
         'ministeeraa',  # Minister
-    } for w in ws[-1]],
+    } for w in ws[:-1]],
     'tir': lambda ws: [False] + [w in {
         'ኣቶ',  # Mister_1
         'ጐይታይ',  # Mister_2
@@ -550,6 +550,8 @@ def extract_token_level(lang, seg):
     fts = extract(lang, seg)
     return [v[TOKEN_START:TOKEN_END] for v in fts]
 
-def extractIndicatorFeatures(lang,seg):
-    fts=extract(lang,seg)
+def extractIndicatorFeatures(lang, seg):
+    # print "seg: ", seg
+    fts = extract(lang, seg)
+    # print "fts: ", fts
     return fts

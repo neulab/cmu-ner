@@ -72,6 +72,7 @@ class vanilla_NER_CRF_model(CRF_Model):
             concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in zip(char_embs, word_embs, feat_embs)]
         else:
             concat_inputs = [dy.concatenate([c, w]) for c, w in zip(char_embs, word_embs)]
+
         birnn_outputs = self.birnn_encoder.encode(concat_inputs, training=training)
 
         return birnn_outputs
