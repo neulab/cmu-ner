@@ -2,6 +2,7 @@ import sys
 import argparse
 import codecs
 
+
 def run_program(input, output, setEconll):
     reload(sys)	
     sys.setdefaultencoding('utf-8')
@@ -32,7 +33,7 @@ def run_program(input, output, setEconll):
                     print '\t'.join(line_split) + '\t' + tags[ctr]
                     output_file.write('\t'.join(line_split) + '\t' + tags[ctr] +"\n")
                 else:
-                    print "\n"
+                    print ""
                     output_file.write("\n")
             assert ctr + 1 == len(tags)
 
