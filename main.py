@@ -12,7 +12,7 @@ uid = uuid.uuid4().get_hex()[:6]
 
 
 def evaluate(data_loader, path, model):
-    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang, training=False)
+    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang)
 
     # tot_acc = 0.0
     predictions = []
@@ -80,7 +80,7 @@ def evaluate_lr(data_loader, path, model):
     with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
-                if p not in data_loader.id_to_tag[p]:
+                if p not in data_loader.id_to_tag:
                     print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
                     p = 0
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
