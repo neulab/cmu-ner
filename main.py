@@ -1,11 +1,12 @@
 __author__ = 'chuntingzhou'
-import argparse
-from dataloaders.data_loader import *
-from models.model_builder import *
 import os
 import uuid
-from models.Convert_Output_Darpa import *
-from models.Convert_to_darpa_xml import *
+
+from utils.Convert_to_darpa_xml import *
+
+from dataloaders.data_loader import *
+from models.model_builder import *
+from utils.Convert_Output_Darpa import *
 
 uid = uuid.uuid4().get_hex()[:6]
 
