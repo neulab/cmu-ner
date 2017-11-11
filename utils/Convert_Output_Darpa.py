@@ -2,6 +2,7 @@ import sys
 import argparse
 import codecs
 
+
 def run_program(input, output, setEconll):
     reload(sys)	
     sys.setdefaultencoding('utf-8')

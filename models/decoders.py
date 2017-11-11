@@ -1,5 +1,5 @@
 __author__ = 'chuntingzhou'
-from utils import *
+from utils.util import *
 
 
 class Decoder():

@@ -1,5 +1,5 @@
 __author__ = 'chuntingzhou'
-from utils import *
+from utils.util import *
 
 ''' Designing idea: the encoder should be agnostic to the input, it can be either
     arbitrary spans, characters, or words, or even raw feature. However, user has to specify
