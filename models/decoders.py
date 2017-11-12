@@ -66,6 +66,56 @@ class chain_CRF_decoder(Decoder):
         terminal_alpha = log_sum_exp_dim_0(alpha_tm1 + self.transition_matrix[self.end_id])  # (1, batch_size)
         return terminal_alpha
 
+    def forward_alg_2(self, tag_scores, batch_size):
+        ''' Forward DP for CRF.
+        tag_scores (list of batched dy.Tensor): (tag_size, batchsize)
+        '''
+        # Be aware: if a is lookup_parameter with 2 dimension, then a[i] returns one row;
+        # if b = dy.parameter(a), then b[i] returns one column; which means dy.parameter(a) already transpose a
+        transpose_transition_score = dy.parameter(self.transition_matrix)
+
+        alphas = []
+        alpha_tm1 = transpose_transition_score[self.start_id] + tag_scores[0]
+        alphas.append(alpha_tm1)
+
+
+        for tag_score in tag_scores[1:]:
+            # extend for each transit <to>
+            alpha_tm1 = dy.concatenate_cols([alpha_tm1] * self.tag_size)  # (from, to, batch_size)
+            # each column i of tag_score will be the repeated emission score to tag i
+            tag_score = dy.transpose(dy.concatenate_cols([tag_score] * self.tag_size))
+            alpha_t = alpha_tm1 + transpose_transition_score + tag_score
+            alpha_tm1 = log_sum_exp_dim_0(alpha_t)  # (tag_size, batch_size)
+            alphas.append( alpha_tm1)
+
+        terminal_alpha = log_sum_exp_dim_0(alpha_tm1 + self.transition_matrix[self.end_id])  # (1, batch_size)
+        return terminal_alpha, alphas
+
+    def backward_alg(self, tag_scores, batch_size):
+        ''' Backward DP for CRF.
+        tag_scores (list of batched dy.Tensor): (tag_size, batchsize)
+        '''
+        # Be aware: if a is lookup_parameter with 2 dimension, then a[i] returns one row;
+        # if b = dy.parameter(a), then b[i] returns one column; which means dy.parameter(a) already transpose a
+        transpose_transition_score = dy.parameter(self.transition_matrix)
+        betas=[]
+
+        beta_tp1 = transpose_transition_score[self.end_id] + tag_scores[len(tag_scores) -1]
+        betas.append(beta_tp1)
+
+        for index in xrange(len(tag_scores)-2,-1,-1):
+            tag_score = tag_scores[index]
+            # extend for each transit <to>
+            beta_tp1 = dy.concatenate_cols([beta_tp1] * self.tag_size)  # (from, to, batch_size)
+            # each column i of tag_score will be the repeated emission score to tag i
+            tag_score = dy.transpose(dy.concatenate_cols([tag_score] * self.tag_size))
+            beta_t = beta_tp1 + transpose_transition_score + tag_score
+            beta_tp1 = log_sum_exp_dim_0(beta_tp1)  # (tag_size, batch_size)
+            betas.append(beta_tp1)
+
+        terminal_beta = log_sum_exp_dim_0(beta_tp1 + self.transition_matrix[self.start_id])  # (1, batch_size)
+        return terminal_beta, betas[::-1]
+
     def score_one_sequence(self, tag_scores, tags, batch_size):
         ''' tags: list of tag ids at each time step '''
         # print tags, batch_size
@@ -75,6 +125,7 @@ class chain_CRF_decoder(Decoder):
         score = dy.inputTensor(np.zeros(batch_size), batched=True)
         # tag_scores = dy.concatenate_cols(tag_scores) # tot_tags, sent_len, batch_size
         # print "tag dim: ", tag_scores.dim()
+        print len(tags), len(tag_scores)
         for i in range(len(tags) - 1):
             score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, tags[i + 1]), tags[i]) \
                     + dy.pick_batch(tag_scores[i], tags[i + 1])
@@ -102,8 +153,17 @@ class chain_CRF_decoder(Decoder):
         tag_scores = [dy.affine_transform([b_score_tag, W_score_tag, tag_emb]) for tag_emb in tag_embs]
 
         # scores over all paths, all scores are in log-space
-        forward_scores = self.forward_alg(tag_scores, batch_size)
+
+        forward_scores, alphas = self.forward_alg_2(tag_scores, batch_size)
+        backward_scores, betas = self.backward_alg(tag_scores, batch_size)
+
+
         gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
+
+        marginals=[]
+
+        for sent in range(len(alphas)):
+            marginals.append(dy.cdiv(dy.cmult(alphas[sent], betas[sent]), alphas[sent][self.end_id]))
         # negative log likelihood
         loss = dy.sum_batches(forward_scores - gold_score) / batch_size
         return loss #, dy.sum_batches(forward_scores)/batch_size, dy.sum_batches(gold_score) / batch_size
