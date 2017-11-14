@@ -90,7 +90,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     print "length of dict: ", len(word_to_id)
     pretrain_word_emb = {}
-    for line in codecs.open(path_to_emb, "r", "utf-8"):
+    for line in codecs.open(path_to_emb, "r", "latin-1"):
         items = line.strip().split()
         if len(items) == dim + 1:
             try:
@@ -258,10 +258,20 @@ def transpose_char_input(tgt_batch, padding_token):
 
 
 if __name__ == "__main__":
-    from scipy.misc import logsumexp
-    import numpy as np
-
-    # a = np.random.rand(3, 4, 2)
+    # from scipy.misc import logsumexp
+    # import numpy as np
+    #
+    # # a = np.random.rand(3, 4, 2)
+    # # b = logsumexp(a, axis=0)
+    # # a_t = dy.inputTensor(a, batched=True)
+    # # b_t = log_sum_exp_dim_0(a_t)
+    # # print "numpy "
+    # # print b
+    # # print "dynet "
+    # # print b_t.value(), b_t.dim()
+    # # print dy.pick_batch_elem(b_t, 1).npvalue()
+    #
+    # a = np.random.rand(3, 2)
     # b = logsumexp(a, axis=0)
     # a_t = dy.inputTensor(a, batched=True)
     # b_t = log_sum_exp_dim_0(a_t)
@@ -270,13 +280,20 @@ if __name__ == "__main__":
     # print "dynet "
     # print b_t.value(), b_t.dim()
     # print dy.pick_batch_elem(b_t, 1).npvalue()
+    dim = 100
+    # path_to_emb = "/Users/zct/Downloads/tir.emb"
+    path_to_emb = "../datasets/english/glove.6B/glove.6B.100d.txt"
+    pretrain_word_emb = {}
+    i = 1
+    for line in codecs.open(path_to_emb, "r", "latin-1"):
+        items = line.strip().split()
+        if len(items) == dim + 1:
+            try:
+                assert len(items) == dim + 1
+                pretrain_word_emb[items[0]] = np.asarray(items[1:]).astype(np.float32)
+            except ValueError:
+                continue
 
-    a = np.random.rand(3, 2)
-    b = logsumexp(a, axis=0)
-    a_t = dy.inputTensor(a, batched=True)
-    b_t = log_sum_exp_dim_0(a_t)
-    print "numpy "
-    print b
-    print "dynet "
-    print b_t.value(), b_t.dim()
-    print dy.pick_batch_elem(b_t, 1).npvalue()
+            if i == 1:
+                print items[0], pretrain_word_emb[items[0]]
+                i += 1
