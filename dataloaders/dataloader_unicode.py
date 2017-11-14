@@ -114,7 +114,7 @@ class NER_DataLoader():
         tag_set = set()
 
         def _read_a_file(path):
-            with codecs.open(path, "r", "utf-8") as fin:
+            with codecs.open(path, "r") as fin:
                 to_read_line = []
                 for line in fin:
                     if line.strip() == "":
@@ -142,7 +142,7 @@ class NER_DataLoader():
         tag_set = set()
 
         def _read_a_file(path):
-            with codecs.open(path, "r", "utf-8") as fin:
+            with codecs.open(path, "r") as fin:
                 to_read_line = []
                 for line in fin:
                     if line.strip() == "":
@@ -156,7 +156,7 @@ class NER_DataLoader():
             _read_a_file(path)
 
         #reading from SetE
-        with codecs.open(test_path, "r", "utf-8") as fin:
+        with codecs.open(test_path, "r") as fin:
             for line in fin:
                 fields = line.strip().split()
                 for word in fields:
@@ -195,7 +195,7 @@ class NER_DataLoader():
 
             # print len(discrete_features[-1])
 
-        with codecs.open(path, "r", "utf-8") as fin:
+        with codecs.open(path, "r") as fin:
             one_sent = []
             for line in fin:
                 if line.strip() == "":
@@ -229,7 +229,7 @@ class NER_DataLoader():
             discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
 
         original_sents = []
-        with codecs.open(path, "r", "utf-8") as fin:
+        with codecs.open(path, "r") as fin:
             for line in fin:
                 one_sent = line.rstrip().split()
                 if line:
