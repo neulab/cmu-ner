@@ -11,9 +11,10 @@ from utils.Convert_Output_Darpa import *
 uid = uuid.uuid4().get_hex()[:6]
 
 
-def evaluate(data_loader, path, model):
-    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang, training=False)
+def evaluate(data_loader, path, model, model_name):
+    sents, char_sents, tgt_tags, discrete_features = data_loader.get_data_set(path, args.lang)
 
+    prefix = model_name + "_" + str(uid)
     # tot_acc = 0.0
     predictions = []
     gold_standards = []
@@ -32,8 +33,8 @@ def evaluate(data_loader, path, model):
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-    pred_output_fname = "../eval/%s_pred_output.txt" % (str(uid))
-    eval_output_fname = "%s_eval_score.txt" % (str(uid))
+    pred_output_fname = "../eval/%s_pred_output.txt" % (prefix)
+    eval_output_fname = "%s_eval_score.txt" % (prefix)
     with open(pred_output_fname, "w") as fout:
         for pred, gold in zip(predictions, gold_standards):
             for p, g in zip(pred, gold):
@@ -61,9 +62,9 @@ def evaluate(data_loader, path, model):
     return acc, precision, recall, f1
 
 
-def evaluate_lr(data_loader, path, model):
+def evaluate_lr(data_loader, path, model, model_name):
     sents, char_sents, discrete_features, origin_sents = data_loader.get_lr_test(path, args.lang)
-
+    prefix = model_name + "_" + str(uid)
     predictions = []
     i = 0
     for sent, char_sent, discrete_feature in zip(sents, char_sents, discrete_features):
@@ -76,15 +77,18 @@ def evaluate_lr(data_loader, path, model):
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-    pred_output_fname = "../eval/%s_pred_output.conll" % (str(uid))
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
     with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
+                if p not in data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
-    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (str(uid))
-    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (str(uid))
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
@@ -190,9 +194,9 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
-                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model)
+                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, args.model_name)
                     results = [acc, precision, recall, f1]
                     print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -221,6 +225,7 @@ if __name__ == "__main__":
     parser.add_argument("--dynet-mem", default=1000, type=int)
     parser.add_argument("--dynet-seed", default=5783287, type=int)
 
+    parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--lang", default="english", help="the target language")
     parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
     # parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
@@ -261,7 +266,6 @@ if __name__ == "__main__":
     parser.add_argument("--tgt_lang_train_path", default="../datasets/english/eng.train.bio.conll", type=str)
 
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
-    parser.add_argument("--pretrain_finetune", default="False", action="store_true")
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--feature_dim", type=int, default=30)

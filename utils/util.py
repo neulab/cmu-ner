@@ -6,6 +6,7 @@ import gzip
 import cPickle as pkl
 import codecs
 import math
+from random import shuffle
 np.random.seed(1)
 import operator
 import re
@@ -156,7 +157,9 @@ def make_bucket_batches(data_collections, batch_size):
 
     batches = []
     # np.random.seed(2)
-    for src_len in buckets:
+    src_lens = buckets.keys()
+    shuffle(src_lens)
+    for src_len in src_lens:
         bucket = buckets[src_len]
         np.random.shuffle(bucket)
 

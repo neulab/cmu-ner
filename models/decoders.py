@@ -125,16 +125,19 @@ class chain_CRF_decoder(Decoder):
         max_tm1 = dy.inputTensor(np_init_alpha)
         transpose_transition_score = dy.parameter(self.transition_matrix)  # (to, from)
 
-        for tag_score in tag_scores:
+        for i, tag_score in enumerate(tag_scores):
             max_tm1 = dy.concatenate_cols([max_tm1] * self.tag_size)
             max_t = max_tm1 + transpose_transition_score
-            eval_score = max_t.npvalue()
+            if i != 0:
+                eval_score = max_t.npvalue()[:-2, :]
+            else:
+                eval_score = max_t.npvalue()
             best_tag = np.argmax(eval_score, axis=0)
             back_trace_tags.append(best_tag)
             max_tm1 = dy.inputTensor(eval_score[best_tag, range(self.tag_size)]) + tag_score
 
         terminal_max_T = max_tm1 + self.transition_matrix[self.end_id]
-        eval_terminal = terminal_max_T.npvalue()
+        eval_terminal = terminal_max_T.npvalue()[:-2]
         best_tag = np.argmax(eval_terminal, axis=0)
         best_path_score = eval_terminal[best_tag]
 
