@@ -185,7 +185,7 @@ ex_title = {
         'Vors.',
     } for w in ws[:-1]],
     'amh': lambda ws: [False] + [w in {
-        'አቶ',
+        'አቶ',  # Mr.
         'ወይዘሮ',
         'ወይዘሪት',
         'ፕሮፌሰር',
@@ -241,6 +241,7 @@ ex_title = {
         'ፕሬዝዳንት',  # President_5
         'ኣቦ',  # Father
     } for w in ws[:-1]],
+    'som': lambda ws: [w in {} for w in ws],
 }
 
 
@@ -287,6 +288,7 @@ ex_head_org = {
         'ሚኒስቴር',
         'ኤጀንሲ',
         'ኮሚሽን',
+        'ኮርፖሬሽን',  # corporation
         'ድርጅት',
         'ባለሥልጣን',
         'ባንክ',
@@ -294,6 +296,9 @@ ex_head_org = {
         'ኮሚቴ',
         'ኮርፖሬሽን',
         'ምንጮች',
+        'ፓርቲ',  # party
+        'ፓርቲን',  # party_2
+        'ጋዜጣ',  # newpaper
     } for w in ws],
     'orm': lambda ws: [w.lower() in {
         'ministirii',  # Ministry
@@ -319,6 +324,7 @@ ex_head_org = {
         'ዋኒን',  # Agency_1
         'ተግባር',  # Agency_2
         'ስርሒት',  # Agency_3
+        'ኤጄንሲ',  # Agency_4
         'ሰደቓ',  # Bureau
         'ኮርፖረሽን',  # Corporation
         'ውድብ',  # Organization_1
@@ -327,6 +333,21 @@ ex_head_org = {
         'ኮመት',  # Committee_1
         'ሽማግለ',  # Committee_2
         'ሰራዊት',  # Army
+        'ስርዓት',  # Regime
+    } for w in ws],
+    'som': lambda ws: [w.lower() in {
+        'dowladda',  # government
+        'maamulka',  # administration
+        'xafiiska',  # office
+        'wasaaradda',  # ministry
+        'hay\'adda',  # agency
+        'shirkadda',  # corporation
+        'saacadaha',  # organization
+        'guddi',  # board
+        'bankiga',  # bank
+        'ciidamada',  # army
+        'kooxda',  # faction
+        'shabakada',  # network
     } for w in ws],
 }
 
@@ -343,6 +364,8 @@ ex_head_loc = {
         'Valley',
         'Bay',
         'Mosque',
+        'Cathedral',
+        'Church',
     } for w in ws],
     'deu': lambda ws: [any([
         re.search('[Bb]erg$', w),
@@ -368,6 +391,7 @@ ex_head_loc = {
         'ወሽመጥ',
         'መስጊድ',
         'ሀገር',
+        'ሆስፒታል',  # hospital
     } for w in ws],
     'orm': lambda ws: [w.lower() in {
         'odoola',  # Island
@@ -409,6 +433,20 @@ ex_head_loc = {
         'ስንጭሮ',  # Valley_4
         'በተኽስያን',  # Church
         'መስጊድ',  # Mosque
+    } for w in ws],
+    'som': lambda ws: [w.lower() in {
+        'jasiirad',  # island
+        'harada',  # lake
+        'buurta',  # mountain
+        'dooxada',  # valley
+        'badweynta',  # ocean
+        'webiga',  # river
+        'masaajid',  # mosque
+        'hoteel',  # hotel
+        'hotelka',  # hotel
+        'hotel',  # hotel
+        'degmada',  # district
+        'deegaanka',  # district
     } for w in ws],
 }
 
@@ -453,6 +491,7 @@ ex_head_gpe = {
         'ጦር',
         'ዙሪያ',
         'ላይ',
+        'ተከማ',  # town
     } for w in ws],
     'orm': lambda ws: [w.lower() in {
         'koonyaa',  # District_1
@@ -492,6 +531,14 @@ ex_head_gpe = {
         'ቁሸት',  # Village_2
         'ዓዲ',  # Village_3
     } for w in ws],
+    'som': lambda ws: [w.lower() in {
+        'dalka',  # country
+        'dalalka',  # country
+        'gobolka',  # province, state
+        'magaalada',  # city
+        'tuulo',  # village
+        'jamhuuriyadda',  # republic
+    } for w in ws],
 }
 
 
@@ -501,6 +548,7 @@ ex_prep_from = {
     'amh': lambda ws: [bool(re.match('ከ', w)) for w in ws],
     'orm': lambda ws: [w.lower() in {'irraa', 'ira'} for w in ws],
     'tir': lambda ws: [w in {'ካብ'} for w in ws],
+    'som': lambda ws: [w in {'ilaa'} for w in ws],
 }
 
 
@@ -508,8 +556,9 @@ ex_prep_in = {
     'eng': lambda ws: [w.lower() == 'in' for w in ws],
     'deu': lambda ws: [w.lower() in {'in', 'im'} for w in ws],
     'amh': lambda ws: [bool(re.match('በ', w)) for w in ws],
-    'orm': lambda ws: [w.lower() in {'keessa', 'kesa'} for w in ws],
+    'orm': lambda ws: [w.lower() in {'keessa', 'kesa', 'itti', 'iti'} for w in ws],
     'tir': lambda ws: [w in {'ኣብ'} for w in ws],
+    'som': lambda ws: [w in {'ee'} for w in ws],
 }
 
 
@@ -550,8 +599,7 @@ def extract_token_level(lang, seg):
     fts = extract(lang, seg)
     return [v[TOKEN_START:TOKEN_END] for v in fts]
 
+
 def extractIndicatorFeatures(lang, seg):
-    # print "seg: ", seg
     fts = extract(lang, seg)
-    # print "fts: ", fts
-    return fts
+    return fts                                 
