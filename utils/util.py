@@ -90,7 +90,7 @@ def get_pretrained_emb(path_to_emb, word_to_id, dim):
 
     print "length of dict: ", len(word_to_id)
     pretrain_word_emb = {}
-    for line in codecs.open(path_to_emb, "r"):
+    for line in codecs.open(path_to_emb, "r", "utf-8", errors='replace'):
         items = line.strip().split()
         if len(items) == dim + 1:
             try:
@@ -285,7 +285,7 @@ if __name__ == "__main__":
     # path_to_emb = "../datasets/english/glove.6B/glove.6B.100d.txt"
     pretrain_word_emb = {}
     i = 1
-    for line in codecs.open(path_to_emb, "r"):
+    for line in codecs.open(path_to_emb, "r", 'utf-8', errors='replace'):
         items = line.strip().split()
         if len(items) == dim + 1:
             try:
