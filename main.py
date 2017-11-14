@@ -78,7 +78,16 @@ def evaluate_lr(data_loader, path, model, model_name):
             print "Testing processed %d lines " % i
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
-    with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
+    # with codecs.open(pred_output_fname, "w", "utf-8") as fout:
+    #     for pred, sent in zip(predictions, origin_sents):
+    #         for p, word in zip(pred, sent):
+    #             if p not in data_loader.id_to_tag:
+    #                 print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+    #                 p = 0
+    #             fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
+    #         fout.write("\n")
+
+    with codecs.open(pred_output_fname, "w") as fout:
         for pred, sent in zip(predictions, origin_sents):
             for p, word in zip(pred, sent):
                 if p not in data_loader.id_to_tag:
@@ -89,16 +98,16 @@ def evaluate_lr(data_loader, path, model, model_name):
 
     pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
-    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+    run_program_2(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
-    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    run_program_darpa_2(pred_darpa_output_fname, final_darpa_output_fname)
 
     os.system("bash %s ../eval/%s ../eval/score_file" % (args.score_file, final_darpa_output_fname))
 
     prec=0
     recall=0
     f1=0
-    with codecs.open("../eval/score_file",'r') as fileout:
+    with codecs.open("../eval/score_file", 'r') as fileout:
         for line in fileout:
             columns = line.strip().split('\t')
             if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
