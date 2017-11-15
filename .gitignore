@@ -6,3 +6,5 @@
 *.iml
 *.txt
 datasets/embedding/
+maxma/
+eval/
