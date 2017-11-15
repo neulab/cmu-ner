@@ -156,9 +156,14 @@ def main(args):
     batch_size = args.batch_size
 
     if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
         model = vanilla_NER_CRF_model(args, ner_data_loader)
     elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
         model = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
     else:
         raise NotImplementedError
 
@@ -243,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
 
-    parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn"], type=str)
+    parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn", "char_birnn_cnn"], type=str)
     parser.add_argument("--tag_emb_dim", default=50, type=int)
     parser.add_argument("--pos_emb_dim", default=50, type=int)
     parser.add_argument("--char_emb_dim", default=30, type=int)

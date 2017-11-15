@@ -4,4 +4,7 @@
 # JetBrains
 .idea/
 *.iml
+*.txt
 datasets/embedding/
+maxma/
+eval/

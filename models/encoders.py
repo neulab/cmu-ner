@@ -89,7 +89,7 @@ class Discrete_Feature_Encoder(Encoder):
 
 
 class CNN_Encoder(Encoder):
-    def __init__(self, model, emb_size, win_size=3, filter_size=64, dropout=0.5, vocab_size=0, padding_token=0):
+    def __init__(self, model, emb_size, win_size=3, filter_size=64, dropout=0.5, vocab_size=0, padding_token=0, lookup_emb=None):
         Encoder.__init__(self)
         self.vocab_size = vocab_size # if 0, no lookup tables
         self.win_size = win_size
@@ -100,6 +100,11 @@ class CNN_Encoder(Encoder):
         if vocab_size != 0:
             print "In CNN encoder: creating lookup embedding!"
             self.lookup_emb = model.add_lookup_parameters((vocab_size, 1, 1, emb_size))
+        else:
+            assert lookup_emb is not None
+            print "In CNN encoder: reusing lookup embedding!"
+            self.lookup_emb = lookup_emb
+
         self.W_cnn = model.add_parameters((1, win_size, emb_size, filter_size))
         self.b_cnn = model.add_parameters((filter_size))
         self.b_cnn.zero()
@@ -163,13 +168,15 @@ class BiRNN_Encoder(Encoder):
                  vocab_size=0,
                  emb_size=0,
                  layer=1,
-                 rnn="lstm"):
+                 rnn="lstm",
+                 vocab_emb=None):
         Encoder.__init__(self)
         # self.birnn = dy.BiRNNBuilder(layer, input_dim, hidden_dim, model, dy.LSTMBuilder if rnn == "lstm" else dy.GRUBuilder)
         self.fwd_RNN = dy.LSTMBuilder(layer, input_dim, hidden_dim, model) if rnn == "lstm" else dy.GRUBuilder(layer, input_dim, hidden_dim, model)
         self.bwd_RNN = dy.LSTMBuilder(layer, input_dim, hidden_dim, model) if rnn == "lstm" else dy.GRUBuilder(layer, input_dim, hidden_dim, model)
 
-        self.vocab_size =  vocab_size
+        self.input_dim = input_dim
+        self.vocab_size = vocab_size
         self.padding_token = padding_token
         self.drop_out_rate = output_dropout_rate
         self.emb_drop_rate = emb_dropout_rate
@@ -177,6 +184,12 @@ class BiRNN_Encoder(Encoder):
         if vocab_size > 0:
             print "In BiRNN, creating lookup table!"
             self.vocab_emb = model.add_lookup_parameters((vocab_size, emb_size))
+        else:
+            if vocab_emb is not None:
+                # assert vocab_emb is not None
+                self.vocab_emb = vocab_emb
+            else:
+                self.vocab_emb = None
 
     def encode(self, input_seqs, training=True, char=False):
         if char:
@@ -185,12 +198,33 @@ class BiRNN_Encoder(Encoder):
             return self.encode_seq(input_seqs, training=training)
 
     def encode_seq(self, input_seqs, training=True, char=False):
-        if self.vocab_size > 0:
+        if self.vocab_emb is not None:
             # input_seqs = [[w1, w2],[]]
             transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
-            w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids), self.emb_drop_rate) if self.emb_drop_rate > 0. and training
-                      else dy.lookup_batch(self.vocab_emb, wids)
-                      for wids in transpose_inputs]
+            if self.vocab_size != 0:
+                w_embs = [dy.dropout(dy.lookup_batch(self.vocab_emb, wids),
+                                     self.emb_drop_rate) if self.emb_drop_rate > 0. and training
+                          else dy.lookup_batch(self.vocab_emb, wids)
+                          for wids in transpose_inputs]
+            else:
+                # print "In BiRNN, reusing lookup table!"
+                # print "In our case, use parameters shared by CNN char encoder, need conversion!"
+                vocab_emb = dy.parameter(self.vocab_emb)
+                vocab_size = vocab_emb.dim()[0][-1]
+                # print "In BiRNN Char vocab size: ", vocab_size
+                vocab_emb = dy.reshape(vocab_emb, (self.input_dim, vocab_size))  # expression, not lookup_parameters
+
+                # for wids in transpose_inputs:
+                #     print wids
+                #     print vocab_emb.dim()
+                #     a = dy.pick_batch(vocab_emb, wids, dim=1)
+                #     print a.value()
+                # Special case handler: use pick_batch
+                w_embs = [dy.dropout(dy.pick_batch(vocab_emb, wids, dim=1),
+                                     self.emb_drop_rate) if self.emb_drop_rate > 0. and training
+                          else dy.pick_batch(vocab_emb, wids, dim=1)
+                          for wids in transpose_inputs]
+                # print "In BiRNN char: ", w_embs[0].dim()
         else:
             w_embs = [dy.dropout(emb, self.emb_drop_rate) if self.emb_drop_rate > 0. and training else emb for emb in input_seqs]
         # if vocab_size = 0: input_seqs = [(input_dim, batch_size)]
