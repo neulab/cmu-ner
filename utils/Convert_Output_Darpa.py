@@ -30,10 +30,10 @@ def run_program(input, output, setEconll):
                     ctr += 1
                     line_split = line.strip().split()
                     assert len(line_split) == 10
-                    print '\t'.join(line_split) + '\t' + tags[ctr]
+                    # print '\t'.join(line_split) + '\t' + tags[ctr]
                     output_file.write('\t'.join(line_split) + '\t' + tags[ctr] +"\n")
                 else:
-                    print ""
+                    # print ""
                     output_file.write("\n")
             assert ctr + 1 == len(tags)
 

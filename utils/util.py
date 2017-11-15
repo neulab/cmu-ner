@@ -6,7 +6,9 @@ import gzip
 import cPickle as pkl
 import codecs
 import math
+import random
 from random import shuffle
+random.seed(448)
 np.random.seed(1)
 import operator
 import re
@@ -294,3 +296,8 @@ if __name__ == "__main__":
                 continue
             print items[0], i, pretrain_word_emb[items[0]][:3]
         i += 1
+
+# gradient clipping
+# turn off the dropout
+# use smaller initial lr
+# variational dropout
