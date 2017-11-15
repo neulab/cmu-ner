@@ -4,9 +4,9 @@ import argparse
 
 
 def print_entities(fout,entities, curr_docum, curr_anot):
-    print 'CMU_NER_LOREAL_CP1_TB_GS' + '\t' + curr_docum + '-ann-' + str(curr_anot) + '\t' + ' '.join(
-        entities[0]) + '\t' + curr_docum + ':' + str(entities[2]) + '-' + str(entities[3]) + '\t' + 'NIL' + '\t' + \
-          entities[1] + '\t' + 'NAM' + '\t' + '1.0'
+    # print 'CMU_NER_LOREAL_CP1_TB_GS' + '\t' + curr_docum + '-ann-' + str(curr_anot) + '\t' + ' '.join(
+    #     entities[0]) + '\t' + curr_docum + ':' + str(entities[2]) + '-' + str(entities[3]) + '\t' + 'NIL' + '\t' + \
+    #       entities[1] + '\t' + 'NAM' + '\t' + '1.0'
     fout.write('CMU_NER_LOREAL_CP1_TB_GS' + '\t' + curr_docum + '-ann-' + str(curr_anot) + '\t' + ' '.join(
         entities[0]) + '\t' + curr_docum + ':' + str(entities[2]) + '-' + str(entities[3]) + '\t' + 'NIL' + '\t' + \
           entities[1] + '\t' + 'NAM' + '\t' + '1.0' + "\n")
