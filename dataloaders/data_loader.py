@@ -103,6 +103,7 @@ class NER_DataLoader():
             else:
                 vocab[k] = i + shift
                 i += 1
+        print "Singleton words number: ", len(self.singleton_words)
         return vocab
 
     def read_files(self, paths):

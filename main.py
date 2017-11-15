@@ -64,6 +64,7 @@ def evaluate(data_loader, path, model, model_name):
 
 def evaluate_lr(data_loader, path, model, model_name):
     sents, char_sents, discrete_features, origin_sents = data_loader.get_lr_test(path, args.lang)
+    print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -145,6 +146,7 @@ def main(args):
         sents, char_sents, tgt_tags, discrete_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug
 
     print ner_data_loader.char_to_id
+    print "Data set size (train): ", len(sents)
 
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
