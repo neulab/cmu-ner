@@ -13,8 +13,8 @@ def run_program(input, output, setEconll):
         for i, line in enumerate(lines):
             if len(line) >= 2:
                 line_split = line.strip().split()
-                sys.stderr.write('line: ' + line.strip() + '\n')
-                sys.stderr.flush()
+                # sys.stderr.write('line: ' + line.strip() + '\n')
+                # sys.stderr.flush()
                 assert len(line_split) == 4
                 tags.append(line_split[-1])
 
