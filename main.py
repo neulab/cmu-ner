@@ -69,7 +69,7 @@ def evaluate_lr(data_loader, path, model, model_name):
     i = 0
     for sent, char_sent, discrete_feature in zip(sents, char_sents, discrete_features):
         sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature,training=False)
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature, training=False)
 
         predictions.append(best_path)
 

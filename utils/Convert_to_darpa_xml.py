@@ -26,7 +26,7 @@ def run_program_darpa(input, output):
         fout = codecs.open(output,'w',encoding='utf-8')
         for i, line in enumerate(lines):
             if len(line) > 2:
-                print 'Line number: ' + str(i + 1) + '\n'
+                # print 'Line number: ' + str(i + 1) + '\n'
                 #sys.stderr.flush()
                 line_split = line.strip().split()
                 if curr_docum != line_split[3]:
@@ -57,7 +57,7 @@ def run_program_darpa(input, output):
                     entities[2] = int(line_split[-5])
                     entities[3] = int(line_split[-4])
                 elif line_split[-1][0] == 'I':
-                    print 'line num: ' + str(i + 1) + '\n'
+                    # print 'line num: ' + str(i + 1) + '\n'
 
                     if not in_entity or (len(entities[0]) > 0  and line_split[-1][2:] != entities[1]):# when first tag is I-PER treat it as B-PER
                         in_entity = True
