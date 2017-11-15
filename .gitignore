@@ -6,3 +6,4 @@
 *.iml
 datasets/embedding/
 maxma/
+eval/
