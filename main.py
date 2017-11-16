@@ -99,16 +99,17 @@ def evaluate_lr(data_loader, path, model, model_name):
 
     pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    scoring_file = "../eval/%s_score_file" % (prefix)
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash %s ../eval/%s ../eval/score_file" % (args.score_file, final_darpa_output_fname))
+    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname,scoring_file))
 
     prec=0
     recall=0
     f1=0
-    with codecs.open("../eval/score_file", 'r') as fileout:
+    with codecs.open(scoring_file, 'r') as fileout:
         for line in fileout:
             columns = line.strip().split('\t')
             if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
