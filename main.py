@@ -109,6 +109,31 @@ def evaluate_lr(data_loader, path, model, model_name):
 
     return 0, prec, recall, f1
 
+def evaluate_forLexicon(data_loader, path, model, model_name):
+    sents, char_sents, discrete_features, origin_sents = data_loader.get_lr_test(path, args.lang)
+    prefix = model_name + "_" + str(uid)
+    predictions = []
+    i = 0
+    for sent, char_sent, discrete_feature in zip(sents, char_sents, discrete_features):
+        sent, char_sent, discrete_feature = [sent], [char_sent], [discrete_feature]
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature,training=False)
+
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
+    with codecs.open(pred_output_fname, "w", encoding='utf-8') as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                if p not in data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
+                fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
 
 def replace_singletons(data_loader, sents, replace_rate):
     new_batch_sents = []
@@ -203,6 +228,7 @@ def main(args):
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
                     best_results = [acc, precision, recall, f1]
+                    evaluate_forLexicon(ner_data_loader, args.lexicon_path, model, args.model_name)
                 else:
                     bad_counter += 1
                 if bad_counter > patience:
@@ -272,6 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None)
     parser.add_argument("--score_file", type=str, default=None)
+    parser.add_argument("--lexicon_path", type=str, default="../datasets/english/eng_gaz.conll")
     args = parser.parse_args()
 
     print args
