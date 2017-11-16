@@ -236,6 +236,10 @@ def main(args):
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
+def test(args):
+    pass
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
@@ -247,6 +251,12 @@ if __name__ == "__main__":
     # parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
+    parser.add_argument("--save_to_path", default="../saved_models/")
+    parser.add_argument("--load_from_path", default="../saved_models/")
+
+    # oromo specific argument
+    parser.add_argument("--lowcase_model_path", type=str)
+    parser.add_argument("--train_lowercase_oromo", default=False, action="store_true")
 
     parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn", "char_birnn_cnn"], type=str)
     parser.add_argument("--tag_emb_dim", default=50, type=int)
