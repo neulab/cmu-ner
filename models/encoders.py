@@ -44,11 +44,12 @@ class Encoder():
 
 
 class Lookup_Encoder(Encoder):
-    def __init__(self, model, args, vocab_size, emb_size, padding_token=None, pretrain_embedding=None):
+    def __init__(self, model, args, vocab_size, emb_size, padding_token=None, pretrain_embedding=None, isFeatureEmb=False):
         Encoder.__init__(self)
         self.padding_token = padding_token
         self.map_pretrain = args.map_pretrain
         self.pretrain_fix = args.pretrain_fix
+        self.isFeatureEmb = isFeatureEmb
         if args.map_pretrain:
             self.W_map = model.add_parameters((args.map_dim, emb_size))
             self.b_map = model.add_parameters(args.map_dim)
@@ -61,10 +62,10 @@ class Lookup_Encoder(Encoder):
     def encode(self, input_seqs):
         transpose_inputs, _ = transpose_input(input_seqs, self.padding_token)
         embs = [dy.lookup_batch(self.lookup_table, wids) for wids in transpose_inputs]
-        if self.pretrain_fix:
+        if self.pretrain_fix and not self.isFeatureEmb:
             embs = [dy.nobackprop(emb) for emb in embs]
         # TODO: initialize <unk> with ones vector, initialize W_map with identity matrix
-        if self.map_pretrain:
+        if self.map_pretrain and not self.isFeatureEmb:
             if not self.pretrain_fix:
                 embs = [dy.nobackprop(emb) for emb in embs]
             W_map = dy.parameter(self.W_map)
