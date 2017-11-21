@@ -88,14 +88,14 @@ class vanilla_NER_CRF_model(CRF_Model):
             bc_feat_embs = self.bc_encoder.encode(bc_feats)
 
         if self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
-                             zip(char_embs, word_embs, feat_embs)]
+            concat_inputs = [dy.concatenate([c, w, f, b]) for c, w, f, b in
+                             zip(char_embs, word_embs, feat_embs, bc_feat_embs)]
         elif self.args.use_brown_cluster and not self.args.use_discrete_features:
             concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
                              zip(char_embs, word_embs, bc_feat_embs)]
-        elif self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([c, w, f, b]) for c, w, f, b in
-                             zip(char_embs, word_embs, feat_embs, bc_feat_embs)]
+        elif self.args.use_discrete_features and not self.args.use_brown_cluster:
+            concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
+                             zip(char_embs, word_embs, feat_embs)]
         else:
             concat_inputs = [dy.concatenate([c, w]) for c, w in zip(char_embs, word_embs)]
 
@@ -183,14 +183,14 @@ class BiRNN_CRF_model(CRF_Model):
             bc_feat_embs = self.bc_encoder.encode(bc_feats)
 
         if self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
-                             zip(char_embs, word_embs, feat_embs)]
+            concat_inputs = [dy.concatenate([c, w, f, b]) for c, w, f, b in
+                             zip(char_embs, word_embs, feat_embs, bc_feat_embs)]
         elif self.args.use_brown_cluster and not self.args.use_discrete_features:
             concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
                              zip(char_embs, word_embs, bc_feat_embs)]
-        elif self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([c, w, f, b]) for c, w, f, b in
-                             zip(char_embs, word_embs, feat_embs, bc_feat_embs)]
+        elif self.args.use_discrete_features and not self.args.use_brown_cluster:
+            concat_inputs = [dy.concatenate([c, w, f]) for c, w, f in
+                             zip(char_embs, word_embs, feat_embs)]
         else:
             concat_inputs = [dy.concatenate([c, w]) for c, w in zip(char_embs, word_embs)]
 
@@ -287,14 +287,14 @@ class CNN_BiRNN_CRF_model(CRF_Model):
             bc_feat_embs = self.bc_encoder.encode(bc_feats)
 
         if self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([cr, cc, w, f]) for cr, cc, w, f in
-                             zip(char_embs_birnn, char_embs_cnn, word_embs, feat_embs)]
+            concat_inputs = [dy.concatenate([cr, cc, w, f, b]) for cr, cc, w, f, b in
+                             zip(char_embs_birnn, char_embs_cnn, word_embs, feat_embs, bc_feat_embs)]
         elif self.args.use_brown_cluster and not self.args.use_discrete_features:
             concat_inputs = [dy.concatenate([cr, cc, w, f]) for cr, cc, w, f in
                              zip(char_embs_birnn, char_embs_cnn, word_embs, bc_feat_embs)]
-        elif self.args.use_discrete_features and self.args.use_brown_cluster:
-            concat_inputs = [dy.concatenate([cr, cc, w, f, b]) for cr, cc, w, f, b in
-                             zip(char_embs_birnn, char_embs_cnn, word_embs, feat_embs, bc_feat_embs)]
+        elif self.args.use_discrete_features and not self.args.use_brown_cluster:
+            concat_inputs = [dy.concatenate([cr, cc, w, f]) for cr, cc, w, f in
+                             zip(char_embs_birnn, char_embs_cnn, word_embs, feat_embs)]
         else:
             concat_inputs = [dy.concatenate([cr, cc, w]) for cr, cc, w in zip(char_embs_birnn, char_embs_cnn, word_embs)]
 
@@ -357,11 +357,11 @@ class Sep_Encoder_CRF_model(CRF_Model):
         if self.feature_birnn_input_dim > 0:
             self.feature_birnn = BiRNN_Encoder(self.model,
                                                self.feature_birnn_input_dim,
-                                               args.feature_birnn_hideen_dim,
+                                               args.feature_birnn_hidden_dim,
                                                emb_dropout_rate=0.0,
                                                output_dropout_rate=output_dropout_rate,
                                                vocab_size=0)
-            src_ctx_dim += args.feature_birnn_hidenn_dim
+            src_ctx_dim += args.feature_birnn_hidden_dim
 
         self.char_cnn_encoder = CNN_Encoder(self.model, char_emb_dim, cnn_win_size, cnn_filter_size,
                                             0.0, char_vocab_size, data_loader.char_padding_token)
@@ -396,12 +396,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
         char_embs_cnn = self.char_cnn_encoder.encode(char_sents, training=training, char=True)
         word_embs = self.word_lookup.encode(sents)
 
-        if self.args.use_discrete_features:
-            feat_embs = self.feature_encoder.encode(feats)
-            concat_inputs = [dy.concatenate([cr, cc, w, f]) for cr, cc, w, f in zip(char_embs_birnn, char_embs_cnn, word_embs, feat_embs)]
-        else:
-            concat_inputs = [dy.concatenate([cr, cc, w]) for cr, cc, w in zip(char_embs_birnn, char_embs_cnn, word_embs)]
-
+        concat_inputs = [dy.concatenate([cr, cc, w]) for cr, cc, w in zip(char_embs_birnn, char_embs_cnn, word_embs)]
         birnn_outputs = self.birnn_encoder.encode(concat_inputs, training=training)
 
         if self.feature_birnn_input_dim > 0:

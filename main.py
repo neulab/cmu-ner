@@ -205,7 +205,7 @@ def main(args):
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
 
-    display_freq = 10
+    display_freq = 100
     valid_freq = args.valid_freq
     batch_size = args.batch_size
 
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     # oromo specific argument
     parser.add_argument("--lowcase_model_path", type=str)
     parser.add_argument("--train_lowercase_oromo", default=False, action="store_true")
-    parser.add_argument("--oromo_nomalize", default=False, action="store_true")
+    parser.add_argument("--oromo_normalize", default=False, action="store_true", help="if train lowercase model, not sure if norm also helps, this would loss a lot of information")
 
     parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn", "char_birnn_cnn", "sep"], type=str)
     parser.add_argument("--tag_emb_dim", default=50, type=int)
@@ -351,7 +351,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
 
-    parser.add_argument("--feature_birnn_hideen_dim", default=100, type=int, action="store")
+    parser.add_argument("--feature_birnn_hidden_dim", default=50, type=int, action="store")
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true")
     parser.add_argument("--use_brown_cluster", default=False, action="store_true")
@@ -360,6 +360,7 @@ if __name__ == "__main__":
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--feature_dim", type=int, default=30)
 
+    parser.add_argument("--post_process", default=False, action="store_true")
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None)
     parser.add_argument("--score_file", type=str, default=None)
