@@ -4,9 +4,12 @@ import os
 from utils.features import *
 from utils.util import *
 
+# from utils.orm_norm import orm_morph
+from utils import orm_morph
 
 class NER_DataLoader():
     def __init__(self, args):
+        # This is data loader as well as feature extractor!!
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         ''' TODO: 1. normalizing all digits
                   2. Using full vocabulary from GloVe, when testing, lower case first'''
@@ -21,6 +24,12 @@ class NER_DataLoader():
 
         self.pretrained_embedding_path = args.pretrain_emb_path
         self.use_discrete_feature = args.use_discrete_features
+        self.use_brown_cluster = args.use_brown_cluster
+        self.orm_norm = args.oromo_normalize
+
+        if self.use_brown_cluster:
+            self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
+            self.brown_cluster_dicts['<unk>'] = len(self.brown_cluster_dicts)
 
         if False and os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
@@ -79,6 +88,8 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
+            if self.orm_norm:
+                word = orm_morph.best_parse(word)
             word_dict[word] += 1
 
     def get_vocab_from_set(self, a_set, shift=0):
@@ -163,6 +174,8 @@ class NER_DataLoader():
                 for word in fields:
                     for c in word:
                         char_set.add(c)
+                    if self.orm_norm:
+                        word = orm_morph.best_parse(word)
                     word_dict[word] += 1
 
         tag_vocab = self.get_vocab_from_set(tag_set)
@@ -176,22 +189,31 @@ class NER_DataLoader():
         char_sents = []
         tgt_tags = []
         discrete_features = []
+        bc_features = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_ner = []
             temp_char = []
-
+            temp_bc = []
             for w in one_sent:
                 fields = w.split()
                 word = fields[0]
                 ner_tag = fields[-1]
+                if self.use_brown_cluster:
+                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+
+                if self.orm_norm:
+                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+
+
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
+            bc_features.append(temp_bc)
             discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
 
             # print len(discrete_features[-1])
@@ -212,22 +234,30 @@ class NER_DataLoader():
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
-        return sents, char_sents, tgt_tags, discrete_features
+        return sents, char_sents, tgt_tags, discrete_features, bc_features
 
     def get_lr_test(self, path, lang):
         sents = []
         char_sents = []
         discrete_features = []
+        bc_features = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_char = []
+            temp_bc = []
             for word in one_sent:
+                if self.use_brown_cluster:
+                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+                if self.orm_norm:
+                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+
             sents.append(temp_sent)
             char_sents.append(temp_char)
             discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            bc_features.append(temp_bc)
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
@@ -242,4 +272,4 @@ class NER_DataLoader():
         else:
             self.num_feats = 0
 
-        return sents, char_sents, discrete_features, original_sents
+        return sents, char_sents, discrete_features, original_sents, bc_features
