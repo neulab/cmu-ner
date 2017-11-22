@@ -64,7 +64,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
     :return:
     '''
     predicted_doc = defaultdict(lambda: dict()) # (doc_id: (span_token, start, end):NER)
-    unpredicted_spans = defaultdict(lambda: list) # (doc_id: [(ngram_token, start, end)])
+    unpredicted_spans = defaultdict(lambda: list()) # (doc_id: [(ngram_token, start, end)])
     MAX_NGRAM = 5
     prediction_list = []
     if lookup_files is not None:
@@ -120,7 +120,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
                         if key not in predicted_doc[doc_id]:
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
-                            prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1]))
+                            prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1], predict_tag))
                     else:
                         if key not in predicted_doc[doc_id]:
                             unpredicted_spans[doc_id].append(key)
@@ -179,7 +179,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
                 # propagate the label
                 add_label += 1
                 annot_id[doc_id] += 1
-                prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2))
+                prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2, pred_tag))
                 unpredicted_spans[doc_id].remove(unpredict_span)
         print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
@@ -234,7 +234,7 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
         start_ids = []
         end_ids = []
         doc_attribute = ""
-        
+
         for line in fin:
             tokens = line.strip().split('\t')
             if line == "" or line == "\n":
