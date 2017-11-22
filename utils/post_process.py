@@ -145,7 +145,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
     # Label propagation
     # (a) Within document propagation
     for doc_id, span_infos in predicted_doc.iteritems():
-        vote_tag = defaultdict(lambda: defaultdict(list())) # span: tag:[(start, end)]
+        vote_tag = defaultdict(lambda: defaultdict(list)) # span: tag:[(start, end)]
         for span_info, tag in span_infos.iteritems():
             span = span_info[0]
             start = span_info[1]
@@ -278,8 +278,8 @@ if __name__ == "__main__":
     author_list = "../eval/oromo/set0E_author.txt"
     setE_conll = "../eval/oromo/setE.conll"
     pred = "../eval/oromo/cp1_orm_som_trans_0.015_500_somTEmb_8bc874_darpa_output.conll"
-    lookup_file = {"Gen": "../eval/oromo/lexicon_annoatated.txt"}
+    lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
     output_file = "post_test.txt"
-    # post_process(pred, setE_conll, author_list, output_file, lookup_file)
-    post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
+    post_process(pred, setE_conll, author_list, output_file, lookup_file)
+    # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
