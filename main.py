@@ -302,7 +302,7 @@ def main(args):
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
-def test(args):
+def eval_with_two_models(args):
     pass
 
 
