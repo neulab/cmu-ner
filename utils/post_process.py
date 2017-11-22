@@ -1,11 +1,4 @@
-# CMU_NER_LOREAL_CP1_TB_GS
-# IL5_NW_020062_20150527_G0040EZB7 - ann - 14
-# ክርስትያን
-# IL5_NW_020062_20150527_G0040EZB7:1415 - 1420
-# NIL
-# GPE
-# NAM
-# 1.0
+
 import codecs
 from collections import defaultdict
 # "GENERAL lookup table"
@@ -180,5 +173,90 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, looku
                 prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2))
                 unpredicted_spans[doc_id].remove(unpredict_span)
         print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
+
+
+def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author, output_file,lookup_files=None):
+    predicted_doc = defaultdict(lambda: dict()) # (doc_id: (span_token, start, end):NER)
+    unpredicted_spans = defaultdict(lambda: list) # (doc_id: [(ngram_token, start, end)])
+    MAX_NGRAM = 5
+    prediction_list = []
+    if lookup_files is not None:
+        lookup_table = combine_lookup_table(lookup_files)
+    author_lookup = single_lookup_table(path_to_author,"PER")
+    annot_id = defaultdict(lambda: 0) # doc_id:annotation num
+
+    def _look_up(span, doc_attribute):
+        if doc_attribute == "DF" and span in author_lookup:
+            return 'PER'
+        if lookup_files is not None and span in lookup_table:
+            return lookup_table[span]
+        return None
+
+    # First using the lookup table to fix up the current predictions
+    with codecs.open(path_darpa_prediction, "r", "utf-8") as fin:
+        for line in fin:
+            fields = line.strip().split('\t')
+            span = fields[2]
+            predict_tag = fields[5]
+            doc_id_span = fields[3].split(":")
+            doc_id = doc_id_span[0]
+            doc_attribute = doc_id.split('_')[1]
+            annot_id[doc_attribute] += 1
+            span_id = [int(i.strip()) for i in doc_id_span[1].split('-')]
+            start_id, end_id = span_id[0], span_id[1]
+
+            lookup_tag = _look_up(span, doc_attribute)
+            predict_tag = predict_tag if lookup_tag is None else lookup_tag
+
+            fields[5] = predict_tag
+            predicted_doc[doc_id][(span, start_id, end_id)] = predict_tag
+            prediction_list.append(fields)
+
+    # Second, iterate over the full setE using the lookup tables to completed the predicted dict
+    # In the mean time, give statistics of ngrams for label propagation.
+    ngram_freq = defaultdict(lambda: 0)
+    with codecs.open(path_to_full_setE, "r", "utf-8") as fin:
+        one_sent = []
+        start_ids = []
+        end_ids = []
+        doc_attribute = ""
+        index =0
+        for line in fin:
+            tokens = line.strip().split('\t')
+            if line=="" or line == "\n":
+                ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
+                for ngram, s, e in zip(ngrams, starts, ends):
+                    ngram = " ".join(ngram)
+                    ngram_freq[ngram] += 1
+                    predict_tag = _look_up(ngram, doc_attribute)
+                    key = (ngram, s[0], e[-1])
+                    if predict_tag is not None:
+                        if key not in predicted_doc[doc_id]:
+                            predicted_doc[doc_id][key] = predict_tag
+                            annot_id[doc_id] += 1
+                            prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1]))
+                    else:
+                        if key not in predicted_doc[doc_id]:
+                            unpredicted_spans[doc_id].append(key)
+                one_sent = []
+                start_ids = []
+                end_ids = []
+            else:
+                word = tokens[0]
+                print(index)
+                doc_id = tokens[3]
+                doc_attribute = doc_id.split('_')[1]
+                start = int(tokens[6])
+                end = int(tokens[7])
+
+                one_sent.append(word)
+                start_ids.append(start)
+                end_ids.append(end)
+            index = index +1
+
+    with codecs.open(output_file, "w",encoding='utf-8') as fout:
+        for item in prediction_list:
+            one_sent = "\t".join(item)
+            fout.write(one_sent + "\n")
 
 
