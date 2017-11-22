@@ -219,8 +219,11 @@ def main(args):
         print "Using Char Birnn-CNN model!"
         model = CNN_BiRNN_CRF_model(args, ner_data_loader)
     elif args.model_arc == "sep":
-        print "Using seperate encoders for embedding and features!"
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
         model = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
     else:
         raise NotImplementedError
 
@@ -316,7 +319,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_lowercase_oromo", default=False, action="store_true")
     parser.add_argument("--oromo_normalize", default=False, action="store_true", help="if train lowercase model, not sure if norm also helps, this would loss a lot of information")
 
-    parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn", "char_birnn_cnn", "sep"], type=str)
+    parser.add_argument("--model_arc", default="char_cnn", choices=["char_cnn", "char_birnn", "char_birnn_cnn", "sep", "sep_cnn_only"], type=str)
     parser.add_argument("--tag_emb_dim", default=50, type=int)
     parser.add_argument("--pos_emb_dim", default=50, type=int)
     parser.add_argument("--char_emb_dim", default=30, type=int)

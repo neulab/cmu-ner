@@ -9,8 +9,7 @@
 import codecs
 from collections import defaultdict
 # "GENERAL lookup table"
-lookup_tables = {"PER": "author_list.txt"}
-tags = set(['GPE', 'PER', 'ORG', 'ORG'])
+tags = set(['GPE', 'PER', 'ORG', 'LOC'])
 
 
 def make_darpa_format(span, curr_docum, curr_anot, start, end, tag):
@@ -61,6 +60,15 @@ def find_ngrams(sent, starts, ends, n):
 
 
 def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, lookup_files=None, label_propagate=True):
+    '''
+
+    :param path_darpa_prediction: Final output
+    :param path_to_full_setE: setE.conll
+    :param path_to_author: "path_to_author_list"
+    :param lookup_files: {"General": "path_to_lexicon_1", "General": path2"}
+    :param label_propagate: BOOLEAN
+    :return:
+    '''
     predicted_doc = defaultdict(lambda: dict()) # (doc_id: (span_token, start, end):NER)
     unpredicted_spans = defaultdict(lambda: list) # (doc_id: [(ngram_token, start, end)])
     MAX_NGRAM = 5
@@ -180,5 +188,4 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, looku
                 prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2))
                 unpredicted_spans[doc_id].remove(unpredict_span)
         print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
-
 
