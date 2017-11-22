@@ -52,12 +52,13 @@ def find_ngrams(sent, starts, ends, n):
     return all_ngrams, all_starts, all_ends
 
 
-def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, lookup_files=None, label_propagate=True):
+def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None, label_propagate=True):
     '''
 
     :param path_darpa_prediction: Final output
     :param path_to_full_setE: setE.conll
     :param path_to_author: "path_to_author_list"
+    :param output_file:
     :param lookup_files: {"General": "path_to_lexicon_1", "General": path2"}
     :param label_propagate: BOOLEAN
     :return:
@@ -108,7 +109,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, looku
         doc_attribute = ""
         for line in fin:
             tokens = line.split('\t')
-            if len(tokens) == 0:
+            if line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
@@ -182,11 +183,15 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, looku
                 unpredicted_spans[doc_id].remove(unpredict_span)
         print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
+    with codecs.open(output_file, "w", encoding='utf-8') as fout:
+        for item in prediction_list:
+            one_sent = "\t".join(item)
+            fout.write(one_sent + "\n")
 
 
-def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author, output_file,lookup_files=None):
+def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None):
     predicted_doc = defaultdict(lambda: dict()) # (doc_id: (span_token, start, end):NER)
-    unpredicted_spans = defaultdict(lambda: list) # (doc_id: [(ngram_token, start, end)])
+    unpredicted_spans = defaultdict(lambda: list()) # (doc_id: [(ngram_token, start, end)])
     MAX_NGRAM = 5
     prediction_list = []
     if lookup_files is not None:
@@ -229,10 +234,10 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
         start_ids = []
         end_ids = []
         doc_attribute = ""
-        index =0
+        
         for line in fin:
             tokens = line.strip().split('\t')
-            if line=="" or line == "\n":
+            if line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
@@ -243,7 +248,7 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
                         if key not in predicted_doc[doc_id]:
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
-                            prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1]))
+                            prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1], predict_tag))
                     else:
                         if key not in predicted_doc[doc_id]:
                             unpredicted_spans[doc_id].append(key)
@@ -252,7 +257,6 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
                 end_ids = []
             else:
                 word = tokens[0]
-                print(index)
                 doc_id = tokens[3]
                 doc_attribute = doc_id.split('_')[1]
                 start = int(tokens[6])
@@ -261,10 +265,17 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
                 one_sent.append(word)
                 start_ids.append(start)
                 end_ids.append(end)
-            index = index +1
 
-    with codecs.open(output_file, "w",encoding='utf-8') as fout:
+    with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
             fout.write(one_sent + "\n")
+
+if __name__ == "__main__":
+    author_list = "../eval/oromo/set0E_author.txt"
+    setE_conll = "../eval/oromo/setE.conll"
+    pred = "../eval/oromo/cp1_orm_som_trans_0.015_500_somTEmb_8bc874_darpa_output.conll"
+    lookup_file = {"Gen": "../eval/oromo/lexicon_annoatated.txt"}
+    output_file = "post_test.txt"
+    post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
