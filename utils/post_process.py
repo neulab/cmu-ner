@@ -89,16 +89,15 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
             doc_id_span = fields[3].split(":")
             doc_id = doc_id_span[0]
             doc_attribute = doc_id.split('_')[1]
-            annot_id[doc_attribute] += 1
+            annot_id[doc_id] += 1
             span_id = [int(i.strip()) for i in doc_id_span[1].split('-')]
             start_id, end_id = span_id[0], span_id[1]
 
             lookup_tag = _look_up(span, doc_attribute)
             predict_tag = predict_tag if lookup_tag is None else lookup_tag
 
-            fields[5] = predict_tag
             predicted_doc[doc_id][(span, start_id, end_id)] = predict_tag
-            prediction_list.append(fields)
+            prediction_list.append(make_darpa_format(span, doc_id, annot_id[doc_id], start_id, end_id, predict_tag))
 
     # Second, iterate over the full setE using the lookup tables to completed the predicted dict
     # In the mean time, give statistics of ngrams for label propagation.
