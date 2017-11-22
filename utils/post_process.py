@@ -186,7 +186,7 @@ def post_process(path_darpa_prediction, path_to_full_setE, path_to_author, outpu
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
-            fout.write(one_sent + "\n")
+            fout.write(one_sent)
 
 
 def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None):
