@@ -20,7 +20,7 @@ class CRF_Model(object):
         raise NotImplementedError
 
     def save(self):
-        if self.saveto is not None:
+        if self.save_to is not None:
             self.model.save(self.save_to)
         else:
             print('Save to path not provided!')
