@@ -6,8 +6,9 @@ np.set_printoptions(threshold='nan')
 
 
 class CRF_Model(object):
-    def __init__(self):
-        pass
+    def __init__(self, args):
+        self.save_to = args.save_to_path
+        self.load_from = args.load_from_path
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
@@ -34,11 +35,9 @@ class CRF_Model(object):
 class vanilla_NER_CRF_model(CRF_Model):
     ''' Implement End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. '''
     def __init__(self, args, data_loader):
+        super(vanilla_NER_CRF_model, self).__init__(args)
         self.model = dy.Model()
         self.args = args
-
-        self.save_to = args.save_to_path
-        self.load_from = args.load_from_path
 
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
@@ -135,6 +134,7 @@ class BiRNN_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
+        super(BiRNN_CRF_model, self).__init__(args)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -230,6 +230,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
+        super(CNN_BiRNN_CRF_model, self).__init__(args)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -334,6 +335,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
+        super(Sep_Encoder_CRF_model, self).__init__(args)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -448,6 +450,7 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
+        super(Sep_CNN_Encoder_CRF_model, self).__init__(args)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
