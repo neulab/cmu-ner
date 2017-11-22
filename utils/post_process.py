@@ -216,18 +216,15 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
             doc_id_span = fields[3].split(":")
             doc_id = doc_id_span[0]
             doc_attribute = doc_id.split('_')[1]
-            annot_id[doc_attribute] += 1
+            annot_id[doc_id] += 1
             span_id = [int(i.strip()) for i in doc_id_span[1].split('-')]
             start_id, end_id = span_id[0], span_id[1]
 
             lookup_tag = _look_up(span, doc_attribute)
-            if lookup_tag is not None:
-                add_labels += 1
             predict_tag = predict_tag if lookup_tag is None else lookup_tag
 
-            fields[5] = predict_tag
             predicted_doc[doc_id][(span, start_id, end_id)] = predict_tag
-            prediction_list.append(fields)
+            prediction_list.append(make_darpa_format(span, doc_id, annot_id[doc_id], start_id, end_id, predict_tag))
 
     # Second, iterate over the full setE using the lookup tables to completed the predicted dict
     # In the mean time, give statistics of ngrams for label propagation.
@@ -275,7 +272,7 @@ def post_process_lookup(path_darpa_prediction, path_to_full_setE, path_to_author
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
-            fout.write(one_sent + "\n")
+            fout.write(one_sent)
 
 if __name__ == "__main__":
     author_list = "../eval/oromo/set0E_author.txt"
@@ -283,6 +280,6 @@ if __name__ == "__main__":
     pred = "../eval/oromo/cp1_orm_som_trans_0.015_500_somTEmb_8bc874_darpa_output.conll"
     lookup_file = {"Gen": "../eval/oromo/lexicon_annoatated.txt"}
     output_file = "post_test.txt"
-    post_process(pred, setE_conll, author_list, output_file, lookup_file)
+    # post_process(pred, setE_conll, author_list, output_file, lookup_file)
     post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
