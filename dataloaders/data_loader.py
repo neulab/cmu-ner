@@ -247,7 +247,7 @@ class NER_DataLoader():
             temp_bc = []
             for word in one_sent:
                 if self.use_brown_cluster:
-                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
