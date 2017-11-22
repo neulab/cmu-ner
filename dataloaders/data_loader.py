@@ -29,7 +29,7 @@ class NER_DataLoader():
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
-            self.brown_cluster_dicts['<unk>'] = len(self.brown_cluster_dicts)
+            self.brown_cluster_dicts['<unk>'] = 499
 
         if False and os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
@@ -201,14 +201,13 @@ class NER_DataLoader():
                 word = fields[0]
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
-                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
 
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
-
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
