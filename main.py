@@ -188,6 +188,9 @@ def replace_singletons(data_loader, sents, replace_rate):
 
 
 def main(args):
+    prefix = args.model_name + "_" + str(uid)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    best_output_fname = "../eval/best_%s_darpa_output.conll" % (prefix)
     ner_data_loader = NER_DataLoader(args)
 
     print ner_data_loader.id_to_tag
@@ -279,6 +282,9 @@ def main(args):
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
                     best_results = [acc, precision, recall, f1]
+                    model.save()
+                    if args.isLr:
+                        os.system("cp %s %s" % (final_darpa_output_fname, best_output_fname))
                 else:
                     bad_counter += 1
                 if bad_counter > patience:
@@ -312,7 +318,7 @@ if __name__ == "__main__":
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
     parser.add_argument("--save_to_path", default="../saved_models/")
-    parser.add_argument("--load_from_path", default="../saved_models/")
+    parser.add_argument("--load_from_path", default=None)
 
     # oromo specific argument
     parser.add_argument("--lowcase_model_path", type=str)
@@ -369,6 +375,8 @@ if __name__ == "__main__":
     parser.add_argument("--score_file", type=str, default=None)
 
     args = parser.parse_args()
+
+    args.save_to_path = args.save_to_path + args.model_name + ".model"
 
     print args
     main(args)

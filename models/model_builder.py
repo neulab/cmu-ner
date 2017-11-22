@@ -18,12 +18,28 @@ class CRF_Model(object):
     def eval(self, sents, char_sents, feats, bc_feats, training=False):
         raise NotImplementedError
 
+    def save(self):
+        if self.saveto is not None:
+            self.model.save(self.save_to)
+        else:
+            print('Save to path not provided!')
+
+    def load(self):
+        if self.load_from is not None:
+            self.model.populate(self.load_from)
+        else:
+            print('Load from path not provided!')
+
 
 class vanilla_NER_CRF_model(CRF_Model):
     ''' Implement End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. '''
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
+
+        self.save_to = args.save_to_path
+        self.load_from = args.load_from_path
+
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
