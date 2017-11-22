@@ -242,7 +242,7 @@ def main(args):
         for line in batch:
             print [u" ".join([id_to_vocab[c] for c in w]) for w in line]
 
-    lr_decay = 0.05
+    lr_decay = args.decay_rate
 
     valid_history = []
     best_results = [0.0 ,0.0, 0.0, 0.0]
@@ -292,9 +292,11 @@ def main(args):
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
+
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
+
         if args.lr_decay:
             print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
             trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
@@ -351,6 +353,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=10, type=int)
     parser.add_argument("--init_lr", default=0.015, type=float)
     parser.add_argument("--lr_decay", default=False, action="store_true")
+    parser.add_argument("--decay_rate", default=0.05, action="store", type=float)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
 
