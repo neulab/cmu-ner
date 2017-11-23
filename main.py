@@ -115,7 +115,7 @@ def evaluate_lr_less(data_loader, path, model, model_name):
     return acc, precision, recall, f1
 
 
-def evaluate_lr(data_loader, path, model, model_name):
+def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
     sents, char_sents, discrete_features, origin_sents, bc_feats = data_loader.get_lr_test(path, args.lang)
     print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
@@ -153,11 +153,11 @@ def evaluate_lr(data_loader, path, model, model_name):
     pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
     scoring_file = "../eval/%s_score_file" % (prefix)
-    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+    run_program(pred_output_fname, pred_darpa_output_fname, setE)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname,scoring_file))
+    os.system("bash %s ../eval/%s %s" % (score_file, final_darpa_output_fname,scoring_file))
 
     prec = 0
     recall = 0
@@ -186,6 +186,13 @@ def replace_singletons(data_loader, sents, replace_rate):
         new_batch_sents.append(new_sent)
     return new_batch_sents
 
+
+def test_on_full_setE(ner_data_loader, args, model):
+    if args.setEconll is not None and args.score_file is not None:
+        bestModel = model.load(args.save_to_path)
+        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, bestModel, "best_" + args.model_name,
+                                                 args.score_file, args.setEconll)
+        return acc, precision, recall, f1
 
 def main(args):
     prefix = args.model_name + "_" + str(uid)
@@ -275,7 +282,7 @@ def main(args):
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
-                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, args.model_name)
+                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
                     results = [acc, precision, recall, f1]
                     print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -293,6 +300,10 @@ def main(args):
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
 
+                    #Test on full SetE
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader,args,model)
+                    results = [acc, precision, recall, f1]
+                    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
@@ -303,6 +314,11 @@ def main(args):
 
     print("All Epochs done.")
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+
+    # Test on full SetE
+    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, model)
+    results = [acc, precision, recall, f1]
+    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
 
 def eval_with_two_models(args):
@@ -375,8 +391,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--post_process", default=False, action="store_true")
     parser.add_argument("--isLr", default=False, action="store_true")
-    parser.add_argument("--setEconll", type=str, default=None)
-    parser.add_argument("--score_file", type=str, default=None)
+    parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")
+    parser.add_argument("--setEconll_10", type=str, default=None, help="path to the 10% setE conll file")
+    parser.add_argument("--score_file_10", type=str, default=None,help="path to the scoring file for full setE conll file")
+    parser.add_argument("--score_file", type=str, default=None, help="path to the scoring file for 10% setE conll file")
 
     args = parser.parse_args()
 
