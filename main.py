@@ -308,7 +308,7 @@ def main(args):
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
                     # post processing
-                    post_process(best_output_fname)
+                    post_process(args, best_output_fname)
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
@@ -323,7 +323,7 @@ def main(args):
     results = [acc, precision, recall, f1]
     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
     # post processing
-    post_process(best_output_fname)
+    post_process(args, best_output_fname)
 
     print("All Epochs done.")
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
