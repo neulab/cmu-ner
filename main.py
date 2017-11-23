@@ -244,7 +244,7 @@ def main(args):
                     # TODO: Test on full setE
 
                     # post processing
-                    post_processing(best_output_fname)
+                    post_process(best_output_fname)
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
@@ -255,7 +255,7 @@ def main(args):
 
     # TODO: Test on full setE
     # post processing
-    post_processing(best_output_fname)
+    post_process(best_output_fname)
 
     print("All Epochs done.")
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
