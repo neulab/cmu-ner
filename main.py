@@ -7,7 +7,7 @@ from utils.Convert_to_darpa_xml import *
 from dataloaders.data_loader import *
 from models.model_builder import *
 from utils.Convert_Output_Darpa import *
-
+from utils.post_process import post_processing
 uid = uuid.uuid4().get_hex()[:6]
 
 
@@ -156,7 +156,6 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
     run_program(pred_output_fname, pred_darpa_output_fname, setE)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
-
     os.system("bash %s ../eval/%s %s" % (score_file, final_darpa_output_fname,scoring_file))
 
     prec = 0
@@ -196,6 +195,7 @@ def test_on_full_setE(ner_data_loader, args, model):
 
 def main(args):
     prefix = args.model_name + "_" + str(uid)
+    print "PREFIX: ", prefix
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
     best_output_fname = "../eval/best_%s_darpa_output.conll" % (prefix)
     ner_data_loader = NER_DataLoader(args)
@@ -280,6 +280,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
+                    # TODO: Valid on 10% of setE
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
@@ -298,12 +299,16 @@ def main(args):
                 if bad_counter > patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
+                    # TODO: Test on full setE
+
 
                     #Test on full SetE
                     acc, precision, recall, f1 = test_on_full_setE(ner_data_loader,args,model)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+
+                    # post processing
+                    post_processing(best_output_fname)
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
@@ -312,18 +317,65 @@ def main(args):
             print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
             trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
 
-    print("All Epochs done.")
-    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-
-    # Test on full SetE
+    # TODO: Test on full setE
+     # Test on full SetE
     acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, model)
     results = [acc, precision, recall, f1]
     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+    # post processing
+    post_processing(best_output_fname)
+
+    print("All Epochs done.")
+    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
-def eval_with_two_models(args):
+
+
+def post_process(args, pred_file):
+    fout_name = "../eval/post_" + pred_file.split('/')[-1]
+    post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
+    # Currently only support one lookup file
+    lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
+    post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file, label_propagate=args.label_prop)
+    print("Score on the post processed file: ")
+    os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
+
+
+def test_with_two_models(args):
+    # This function is specific for oromo.
+    ner_data_loader = NER_DataLoader(args)
+
+    assert args.load_from_path is not None and args.lower_case_model_path is not None, "Path to the saved models are not provided!"
+
+    if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
+        model = vanilla_NER_CRF_model(args, ner_data_loader)
+        model_lower = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
+        model = BiRNN_CRF_model(args, ner_data_loader)
+        model_lower = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+        model_lower = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+        model = Sep_Encoder_CRF_model(args, ner_data_loader)
+        model_lower = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+        model_lower = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+        raise NotImplementedError
+
+    model.load()
+    model_lower.load()
+
+
+def test_single_model(args):
     pass
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -340,7 +392,8 @@ if __name__ == "__main__":
     parser.add_argument("--load_from_path", default=None)
 
     # oromo specific argument
-    parser.add_argument("--lowcase_model_path", type=str)
+    # No matter orm_norm or orm_lower, the char representation is from the original word
+    parser.add_argument("--lower_case_model_path", type=str, default=None)
     parser.add_argument("--train_lowercase_oromo", default=False, action="store_true")
     parser.add_argument("--oromo_normalize", default=False, action="store_true", help="if train lowercase model, not sure if norm also helps, this would loss a lot of information")
 
@@ -389,7 +442,11 @@ if __name__ == "__main__":
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--feature_dim", type=int, default=30)
 
-    parser.add_argument("--post_process", default=False, action="store_true")
+    # post process arguments
+    parser.add_argument("--label_prop", default=False, action="store_true")
+    parser.add_argument("--author_file", default=None, type=str)
+    parser.add_argument("--lookup_file", default=None, type=str)
+
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")
     parser.add_argument("--setEconll_10", type=str, default=None, help="path to the 10% setE conll file")
@@ -398,6 +455,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
 
     print args
