@@ -7,63 +7,11 @@ from utils.Convert_to_darpa_xml import *
 from dataloaders.data_loader import *
 from models.model_builder import *
 from utils.Convert_Output_Darpa import *
-
+from utils.post_process import post_processing
 uid = uuid.uuid4().get_hex()[:6]
 
 
 def evaluate(data_loader, path, model, model_name):
-    # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
-    sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
-
-    prefix = model_name + "_" + str(uid)
-    # tot_acc = 0.0
-    predictions = []
-    gold_standards = []
-    i = 0
-    for sent, char_sent, tgt_tag, discrete_feature, bc_feat in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats):
-        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
-
-        assert len(best_path) == len(tgt_tag)
-        # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
-        # tot_acc += acc
-        predictions.append(best_path)
-        gold_standards.append(tgt_tag)
-
-        i += 1
-        if i % 1000 == 0:
-            print "Testing processed %d lines " % i
-
-    pred_output_fname = "../eval/%s_pred_output.txt" % (prefix)
-    eval_output_fname = "%s_eval_score.txt" % (prefix)
-    with open(pred_output_fname, "w") as fout:
-        for pred, gold in zip(predictions, gold_standards):
-            for p, g in zip(pred, gold):
-                fout.write("XXX " + data_loader.id_to_tag[g] + " " + data_loader.id_to_tag[p] + "\n")
-            fout.write("\n")
-
-    os.system("../eval/conlleval.v2 < %s > %s" % (pred_output_fname, eval_output_fname))
-
-    with open(eval_output_fname, "r") as fin:
-        lid = 0
-        for line in fin:
-            if lid == 1:
-                fields = line.split(";")
-                acc = float(fields[0].split(":")[1].strip()[:-1])
-                precision = float(fields[1].split(":")[1].strip()[:-1])
-                recall = float(fields[2].split(":")[1].strip()[:-1])
-                f1 = float(fields[3].split(":")[1].strip())
-            lid += 1
-
-    output = open(eval_output_fname, "r").read().strip()
-    print output
-    os.system("rm %s" % (eval_output_fname,))
-    os.system("rm %s" % (pred_output_fname,))
-
-    return acc, precision, recall, f1
-
-
-def evaluate_lr_less(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
 
@@ -157,7 +105,7 @@ def evaluate_lr(data_loader, path, model, model_name):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
-    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname,scoring_file))
+    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -189,6 +137,7 @@ def replace_singletons(data_loader, sents, replace_rate):
 
 def main(args):
     prefix = args.model_name + "_" + str(uid)
+    print "PREFIX: ", prefix
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
     best_output_fname = "../eval/best_%s_darpa_output.conll" % (prefix)
     ner_data_loader = NER_DataLoader(args)
@@ -273,6 +222,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
+                    # TODO: Valid on 10% of setE
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, args.model_name)
@@ -291,8 +241,10 @@ def main(args):
                 if bad_counter > patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    # test_acc, test_precision, test_recall, test_f1 = evaluate_lr()
+                    # TODO: Test on full setE
 
+                    # post processing
+                    post_processing(best_output_fname)
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
@@ -305,9 +257,51 @@ def main(args):
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
-def eval_with_two_models(args):
-    pass
+def post_process(args, pred_file):
+    fout_name = "../eval/post_" + pred_file.split('/')[-1]
+    post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
+    # Currently only support one lookup file
+    lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
+    post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file, label_propagate=args.label_prop)
+    print("Score on the post processed file: ")
+    os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
 
+
+def test_with_two_models(args):
+    # This function is specific for oromo.
+    ner_data_loader = NER_DataLoader(args)
+
+    assert args.load_from_path is not None and args.lower_case_model_path is not None, "Path to the saved models are not provided!"
+
+    if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
+        model = vanilla_NER_CRF_model(args, ner_data_loader)
+        model_lower = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
+        model = BiRNN_CRF_model(args, ner_data_loader)
+        model_lower = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+        model_lower = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+        model = Sep_Encoder_CRF_model(args, ner_data_loader)
+        model_lower = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+        model_lower = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+        raise NotImplementedError
+
+    model.load()
+    model_lower.load()
+
+
+def test_single_model(args):
+    pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -324,7 +318,8 @@ if __name__ == "__main__":
     parser.add_argument("--load_from_path", default=None)
 
     # oromo specific argument
-    parser.add_argument("--lowcase_model_path", type=str)
+    # No matter orm_norm or orm_lower, the char representation is from the original word
+    parser.add_argument("--lower_case_model_path", type=str, default=None)
     parser.add_argument("--train_lowercase_oromo", default=False, action="store_true")
     parser.add_argument("--oromo_normalize", default=False, action="store_true", help="if train lowercase model, not sure if norm also helps, this would loss a lot of information")
 
@@ -373,13 +368,18 @@ if __name__ == "__main__":
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--feature_dim", type=int, default=30)
 
-    parser.add_argument("--post_process", default=False, action="store_true")
+    # post process arguments
+    parser.add_argument("--label_prop", default=False, action="store_true")
+    parser.add_argument("--author_file", default=None, type=str)
+    parser.add_argument("--lookup_file", default=None, type=str)
+
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None)
     parser.add_argument("--score_file", type=str, default=None)
 
     args = parser.parse_args()
 
+    # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
 
     print args

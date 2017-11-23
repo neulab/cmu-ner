@@ -4,8 +4,8 @@ import os
 from utils.features import *
 from utils.util import *
 
-# from utils.orm_norm import orm_morph
-from utils import orm_morph
+from utils.orm_norm import orm_morph
+# from utils import orm_morph
 
 class NER_DataLoader():
     def __init__(self, args):
@@ -26,6 +26,7 @@ class NER_DataLoader():
         self.use_discrete_feature = args.use_discrete_features
         self.use_brown_cluster = args.use_brown_cluster
         self.orm_norm = args.oromo_normalize
+        self.orm_lower = args.train_lowercase_oromo
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
@@ -88,6 +89,8 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
+            if self.orm_lower:
+                word = word.lower()
             if self.orm_norm:
                 word = orm_morph.best_parse(word)
             word_dict[word] += 1
@@ -174,6 +177,8 @@ class NER_DataLoader():
                 for word in fields:
                     for c in word:
                         char_set.add(c)
+                    if self.orm_lower:
+                        word = word.lower()
                     if self.orm_norm:
                         word = orm_morph.best_parse(word)
                     word_dict[word] += 1
@@ -202,6 +207,9 @@ class NER_DataLoader():
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+
+                if self.orm_lower:
+                    word = word.lower()
 
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
@@ -248,6 +256,8 @@ class NER_DataLoader():
             for word in one_sent:
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+                if self.orm_lower:
+                    word = word.lower()
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
@@ -272,3 +282,7 @@ class NER_DataLoader():
             self.num_feats = 0
 
         return sents, char_sents, discrete_features, original_sents, bc_features
+
+
+    def get_lr_test_setE(self, path, lang):
+        pass
