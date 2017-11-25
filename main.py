@@ -63,58 +63,6 @@ def evaluate(data_loader, path, model, model_name):
     return acc, precision, recall, f1
 
 
-def evaluate_lr_less(data_loader, path, model, model_name):
-    # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
-    sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
-
-    prefix = model_name + "_" + str(uid)
-    # tot_acc = 0.0
-    predictions = []
-    gold_standards = []
-    i = 0
-    for sent, char_sent, tgt_tag, discrete_feature, bc_feat in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats):
-        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
-
-        assert len(best_path) == len(tgt_tag)
-        # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
-        # tot_acc += acc
-        predictions.append(best_path)
-        gold_standards.append(tgt_tag)
-
-        i += 1
-        if i % 1000 == 0:
-            print "Testing processed %d lines " % i
-
-    pred_output_fname = "../eval/%s_pred_output.txt" % (prefix)
-    eval_output_fname = "%s_eval_score.txt" % (prefix)
-    with open(pred_output_fname, "w") as fout:
-        for pred, gold in zip(predictions, gold_standards):
-            for p, g in zip(pred, gold):
-                fout.write("XXX " + data_loader.id_to_tag[g] + " " + data_loader.id_to_tag[p] + "\n")
-            fout.write("\n")
-
-    os.system("../eval/conlleval.v2 < %s > %s" % (pred_output_fname, eval_output_fname))
-
-    with open(eval_output_fname, "r") as fin:
-        lid = 0
-        for line in fin:
-            if lid == 1:
-                fields = line.split(";")
-                acc = float(fields[0].split(":")[1].strip()[:-1])
-                precision = float(fields[1].split(":")[1].strip()[:-1])
-                recall = float(fields[2].split(":")[1].strip()[:-1])
-                f1 = float(fields[3].split(":")[1].strip())
-            lid += 1
-
-    output = open(eval_output_fname, "r").read().strip()
-    print output
-    os.system("rm %s" % (eval_output_fname,))
-    os.system("rm %s" % (pred_output_fname,))
-
-    return acc, precision, recall, f1
-
-
 def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
     sents, char_sents, discrete_features, origin_sents, bc_feats = data_loader.get_lr_test(path, args.lang)
     print "Evaluation data size: ", len(sents)
@@ -140,15 +88,6 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
                     p = 0
                 fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
-
-    # with codecs.open(pred_output_fname, "w") as fout:
-    #     for pred, sent in zip(predictions, origin_sents):
-    #         for p, word in zip(pred, sent):
-    #             if p not in data_loader.id_to_tag:
-    #                 print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
-    #                 p = 0
-    #             fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
-    #         fout.write("\n")
 
     pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
@@ -192,6 +131,7 @@ def test_on_full_setE(ner_data_loader, args, model):
         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, bestModel, "best_" + args.model_name,
                                                  args.score_file, args.setEconll)
         return acc, precision, recall, f1
+
 
 def main(args):
     prefix = args.model_name + "_" + str(uid)
@@ -280,9 +220,9 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    # TODO: Valid on 10% of setE
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
+                    # TODO: Valid on 10% of setE
                     acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
                     results = [acc, precision, recall, f1]
                     print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
@@ -301,9 +241,8 @@ def main(args):
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     # TODO: Test on full setE
 
-
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader,args,model)
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, model)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -327,8 +266,6 @@ def main(args):
 
     print("All Epochs done.")
     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-
-
 
 
 def post_process(args, pred_file):
@@ -373,9 +310,136 @@ def test_with_two_models(args):
     model.load()
     model_lower.load()
 
+    sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = ner_data_loader.get_lr_test_setE(args.setEconll, args.lang)
+
+    print "Evaluation data size: ", len(sents)
+    prefix = args.model_name + "_" + str(uid)
+    predictions = []
+    i = 0
+
+    for sent, char_sent, discrete_feature, bc_feat, doc_id in zip(sents, char_sents, discrete_features, bc_feats, doc_ids):
+        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
+
+        if doc_id == "DF":
+            best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        else:
+            best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
+    with codecs.open(pred_output_fname, "w", "utf-8") as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                if p not in ner_data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
+                fout.write(word + "\tNNP\tNP\t" + ner_data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    scoring_file = "../eval/%s_score_file" % (prefix)
+    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+
+    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+
+    prec = 0
+    recall = 0
+    f1 = 0
+    with codecs.open(scoring_file, 'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec = float(columns[-4])
+                recall = float(columns[-3])
+                f1 = float(columns[-2])
+                break
+
+    print("Precison=%f, Recall=%f, F1=%F." % (prec, recall, f1))
+
+    post_process(args, final_darpa_output_fname)
+
 
 def test_single_model(args):
-    pass
+    ner_data_loader = NER_DataLoader(args)
+
+    if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
+        model = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
+        model = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+        model = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+        raise NotImplementedError
+
+    model.load()
+
+    sents, char_sents, discrete_features, origin_sents, bc_feats = ner_data_loader.get_lr_test(
+        args.test_path, args.lang)
+
+    print "Evaluation data size: ", len(sents)
+    prefix = args.model_name + "_" + str(uid)
+    predictions = []
+    i = 0
+
+    for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
+
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
+    with codecs.open(pred_output_fname, "w", "utf-8") as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                if p not in ner_data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
+                fout.write(word + "\tNNP\tNP\t" + ner_data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    scoring_file = "../eval/%s_score_file" % (prefix)
+    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+
+    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+
+    prec = 0
+    recall = 0
+    f1 = 0
+    with codecs.open(scoring_file, 'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec = float(columns[-4])
+                recall = float(columns[-3])
+                f1 = float(columns[-2])
+                break
+
+    print("Precison=%f, Recall=%f, F1=%F." % (prec, recall, f1))
+
+    post_process(args, final_darpa_output_fname)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -448,15 +512,27 @@ if __name__ == "__main__":
     parser.add_argument("--lookup_file", default=None, type=str)
 
     parser.add_argument("--isLr", default=False, action="store_true")
+    parser.add_argument("--valid_on_full", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")
     parser.add_argument("--setEconll_10", type=str, default=None, help="path to the 10% setE conll file")
-    parser.add_argument("--score_file_10", type=str, default=None,help="path to the scoring file for full setE conll file")
-    parser.add_argument("--score_file", type=str, default=None, help="path to the scoring file for 10% setE conll file")
+    parser.add_argument("--score_file", type=str, default=None,help="path to the scoring file for full setE conll file")
+    parser.add_argument("--score_file_10", type=str, default=None, help="path to the scoring file for 10% setE conll file")
 
+    # Use trained model to test
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1"],
+                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
     args = parser.parse_args()
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
 
     print args
-    main(args)
+    
+    if args.mode == "train":
+        main(args)
+    elif args.mode == "test_1":
+        test_single_model(args)
+    elif args.mode == "test_2":
+        test_with_two_models(args)
+    else:
+        raise NotImplementedError

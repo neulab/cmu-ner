@@ -283,6 +283,58 @@ class NER_DataLoader():
 
         return sents, char_sents, discrete_features, original_sents, bc_features
 
-
     def get_lr_test_setE(self, path, lang):
-        pass
+        sents = []
+        char_sents = []
+        discrete_features = []
+        bc_features = []
+        doc_ids = []
+        original_sents = []
+
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_char = []
+            temp_bc = []
+            temp_ori_sent = []
+            for w in one_sent:
+                tokens = w.split('\t')
+                word = tokens[0]
+                temp_ori_sent.append(word)
+                docfile = tokens[3]
+                if self.use_brown_cluster:
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+
+                if self.orm_lower:
+                    word = word.lower()
+
+                if self.orm_norm:
+                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+
+            doc_ids.append(docfile.split('_')[1])
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            bc_features.append(temp_bc)
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            original_sents.append(temp_ori_sent)
+            # print len(discrete_features[-1])
+
+        with codecs.open(path, "r", "utf-8") as fin:
+            one_sent = []
+            for line in fin:
+                if line.strip() == "":
+                    if len(one_sent) > 0:
+                        add_sent(one_sent)
+                    one_sent = []
+                else:
+                    one_sent.append(line.strip())
+            if len(one_sent) > 0:
+                add_sent(one_sent)
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
+
+        return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids
