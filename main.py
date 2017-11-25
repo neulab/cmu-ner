@@ -222,8 +222,10 @@ def main(args):
                 if not args.isLr:
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
-                    # TODO: Valid on 10% of setE
-                    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
+                    if args.valid_on_full:
+                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, args.model_name, args.score_file, args.setEconll)
+                    else:
+                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
                     results = [acc, precision, recall, f1]
                     print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -527,7 +529,7 @@ if __name__ == "__main__":
     args.save_to_path = args.save_to_path + args.model_name + ".model"
 
     print args
-    
+
     if args.mode == "train":
         main(args)
     elif args.mode == "test_1":
