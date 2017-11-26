@@ -285,7 +285,7 @@ def main(args):
     post_process(args, best_output_fname)
 
     print("All Epochs done.")
-    print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
+    #print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
 
 def post_process(args, pred_file):
