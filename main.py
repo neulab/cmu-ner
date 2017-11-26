@@ -127,7 +127,8 @@ def replace_singletons(data_loader, sents, replace_rate):
 
 def test_on_full_setE(ner_data_loader, args, model):
     if args.setEconll is not None and args.score_file is not None:
-        bestModel = model.load(args.save_to_path)
+        bestModel = model.load()
+        print("Loaded best model from :" + args.load_from_path)
         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, bestModel, "best_" + args.model_name,
                                                  args.score_file, args.setEconll)
         return acc, precision, recall, f1
@@ -527,6 +528,7 @@ if __name__ == "__main__":
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
+    args.load_from_path = args.save_to_path
 
     print args
 
