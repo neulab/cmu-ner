@@ -4,7 +4,7 @@ import os
 from utils.features import *
 from utils.util import *
 
-from utils.orm_norm import orm_morph
+#from utils.orm_norm import orm_morph
 # from utils import orm_morph
 
 class NER_DataLoader():
@@ -45,8 +45,9 @@ class NER_DataLoader():
                 paths_to_read = [self.train_path, self.test_path, self.dev_path]
                 self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
             else:
-                paths_to_read = [self.train_path, self.dev_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,self.test_path)
+                paths_to_read = [self.train_path]
+                setEpaths = [self.dev_path, self.test_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,setEpaths)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
@@ -148,7 +149,7 @@ class NER_DataLoader():
 
         return tag_vocab, word_vocab, char_vocab
 
-    def read_files_lr(self, paths, test_path):
+    def read_files_lr(self, paths, setEpaths):
         # word_list = []
         # char_list = []
         # tag_list = []
@@ -171,17 +172,18 @@ class NER_DataLoader():
             _read_a_file(path)
 
         #reading from SetE
-        with codecs.open(test_path, "r", "utf-8") as fin:
-            for line in fin:
-                fields = line.strip().split()
-                for word in fields:
-                    for c in word:
-                        char_set.add(c)
-                    if self.orm_lower:
-                        word = word.lower()
-                    if self.orm_norm:
-                        word = orm_morph.best_parse(word)
-                    word_dict[word] += 1
+        for path in setEpaths:
+            with codecs.open(path, "r", "utf-8") as fin:
+                for line in fin:
+                    fields = line.strip().split()
+                    for word in fields:
+                        for c in word:
+                            char_set.add(c)
+                        if self.orm_lower:
+                            word = word.lower()
+                        if self.orm_norm:
+                            word = orm_morph.best_parse(word)
+                        word_dict[word] += 1
 
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
