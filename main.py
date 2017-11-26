@@ -95,7 +95,7 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
     run_program(pred_output_fname, pred_darpa_output_fname, setE)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
-    os.system("bash %s ../eval/%s %s" % (score_file, final_darpa_output_fname,scoring_file))
+    os.system("bash %s ../eval/%s %s" % (score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -233,8 +233,9 @@ def main(args):
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
                     best_results = [acc, precision, recall, f1]
-                    print("Saving the best model so far.......")
-                    model.save()
+                    if updates > 2000:
+                        print("Saving the best model so far.......")
+                        model.save()
                     if args.isLr:
                         os.system("cp %s %s" % (final_darpa_output_fname, best_output_fname))
                 else:
