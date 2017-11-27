@@ -301,7 +301,7 @@ def post_process(args, pred_file):
 def test_with_two_models(args):
     # This function is specific for oromo.
     ner_data_loader = NER_DataLoader(args)
-
+    _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
     assert args.load_from_path is not None and args.lower_case_model_path is not None, "Path to the saved models are not provided!"
 
     if args.model_arc == "char_cnn":
@@ -387,7 +387,8 @@ def test_with_two_models(args):
 
 def test_single_model(args):
     ner_data_loader = NER_DataLoader(args)
-
+    # ugly: get discrete number features
+    _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
     if args.model_arc == "char_cnn":
         print "Using Char CNN model!"
         model = vanilla_NER_CRF_model(args, ner_data_loader)
