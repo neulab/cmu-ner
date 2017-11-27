@@ -146,7 +146,7 @@ def test_on_full_setE(ner_data_loader, args):
         raise NotImplementedError
 
     model.load()
-    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name,args.score_file, args.setEconll)
+    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name, args.score_file, args.setEconll)
     return acc, precision, recall, f1
 
 
@@ -545,7 +545,7 @@ if __name__ == "__main__":
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
-    args.load_from_path = args.save_to_path
+    # args.load_from_path = args.save_to_path
     print args
 
     if args.mode == "train":
