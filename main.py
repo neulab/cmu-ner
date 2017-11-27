@@ -209,7 +209,7 @@ def main(args):
     lr_decay = args.decay_rate
 
     valid_history = []
-    best_results = [0.0 ,0.0, 0.0, 0.0]
+    best_results = [0.0, 0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
         for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats in make_bucket_batches(
                 zip(sents, char_sents, tgt_tags, discrete_features, bc_features), batch_size):
@@ -296,8 +296,17 @@ def post_process(args, pred_file):
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file, label_propagate=args.label_prop)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
+    with codecs.open(post_score_file, 'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec=float(columns[-4])
+                recall =float(columns[-3])
+                f1 = float(columns[-2])
+                break
+    print("prec=%f, recall=%f, f1=%f" % (prec, recall, f1))
 
-
+    
 def test_with_two_models(args):
     # This function is specific for oromo.
     ner_data_loader = NER_DataLoader(args)
