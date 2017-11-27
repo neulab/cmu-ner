@@ -27,6 +27,7 @@ class CRF_Model(object):
 
     def load(self):
         if self.load_from is not None:
+            print('Load model parameters from %s!' % self.load_from)
             self.model.populate(self.load_from)
         else:
             print('Load from path not provided!')
