@@ -352,7 +352,7 @@ def test_with_two_models(args):
         dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
-        if doc_id == "DF":
+        if doc_id == "SN":
             best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
         else:
             best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
@@ -560,7 +560,6 @@ if __name__ == "__main__":
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
-    args.load_from_path = args.save_to_path
 
     print args
 
