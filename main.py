@@ -125,8 +125,28 @@ def replace_singletons(data_loader, sents, replace_rate):
     return new_batch_sents
 
 
-def test_on_full_setE(ner_data_loader, args, model):
-    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name, args.score_file, args.setEconll)
+def test_on_full_setE(ner_data_loader, args):
+
+    if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
+        model = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
+        model = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+        model = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+        raise NotImplementedError
+
+    model.load()
+    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name,args.score_file, args.setEconll)
     return acc, precision, recall, f1
 
 
@@ -242,7 +262,7 @@ def main(args):
                     # TODO: Test on full setE
 
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, model)
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, argsl)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -258,7 +278,7 @@ def main(args):
 
     # TODO: Test on full setE
      # Test on full SetE
-    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, model)
+    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
     results = [acc, precision, recall, f1]
     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
     # post processing
@@ -535,7 +555,9 @@ if __name__ == "__main__":
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
 
-    # args.load_from_path = args.save_to_path
+    args.save_to_path = args.save_to_path + args.model_name + ".model"
+    args.load_from_path = args.save_to_path
+
     print args
 
     if args.mode == "train":
