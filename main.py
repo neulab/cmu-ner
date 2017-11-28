@@ -339,7 +339,7 @@ def test_with_two_models(args):
         raise NotImplementedError
 
     model.load()
-    model_lower.load()
+    model_lower.load(args.lower_case_model_path)
 
     sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = ner_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
