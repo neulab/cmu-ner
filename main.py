@@ -349,6 +349,7 @@ def test_with_two_models(args):
     i = 0
 
     for sent, char_sent, discrete_feature, bc_feat, doc_id in zip(sents, char_sents, discrete_features, bc_feats, doc_ids):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         if doc_id == "DF":
@@ -429,6 +430,7 @@ def test_single_model(args):
     i = 0
 
     for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
