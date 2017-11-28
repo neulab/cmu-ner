@@ -555,7 +555,7 @@ if __name__ == "__main__":
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
     args.save_to_path = args.save_to_path + args.model_name + ".model"
-     args.load_from_path = args.save_to_path
+    args.load_from_path = args.save_to_path
     print args
 
     if args.mode == "train":
