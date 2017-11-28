@@ -71,13 +71,14 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
     predictions = []
     i = 0
     for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
         best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
 
         predictions.append(best_path)
 
         i += 1
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
