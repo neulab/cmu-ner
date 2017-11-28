@@ -148,6 +148,7 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
         # Condition: s1 < e1, s2 < e2
         return not(e1 < s2 or e2 < s1)
 
+    tot_prop_label = 0
     if label_propagate:
         # Label propagation
         # (a) Within document propagation
@@ -188,9 +189,11 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                         annot_id[doc_id] += 1
                         prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2, pred_tag))
                         unpredicted_spans[doc_id].remove(unpredict_span)
+            tot_prop_label += add_label
             if add_label > 0:
                 print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
+    print("Total %d labels get propagated within document!" % (tot_prop_label, ))
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
