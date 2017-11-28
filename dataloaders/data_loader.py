@@ -4,8 +4,10 @@ import os
 from utils.features import *
 from utils.util import *
 
-# from utils.orm_norm import orm_morph
 from utils import orm_morph
+
+# from utils.orm_norm import orm_morph
+
 
 class NER_DataLoader():
     def __init__(self, args):
@@ -26,10 +28,11 @@ class NER_DataLoader():
         self.use_discrete_feature = args.use_discrete_features
         self.use_brown_cluster = args.use_brown_cluster
         self.orm_norm = args.oromo_normalize
+        self.orm_lower = args.train_lowercase_oromo
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
-            self.brown_cluster_dicts['<unk>'] = len(self.brown_cluster_dicts)
+            self.brown_cluster_dicts['<unk>'] = 499
 
         if False and os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
@@ -44,8 +47,9 @@ class NER_DataLoader():
                 paths_to_read = [self.train_path, self.test_path, self.dev_path]
                 self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
             else:
-                paths_to_read = [self.train_path, self.dev_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,self.test_path)
+                paths_to_read = [self.train_path]
+                setEpaths = [self.dev_path, self.test_path]
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read, setEpaths)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
@@ -88,6 +92,8 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
+            if self.orm_lower:
+                word = word.lower()
             if self.orm_norm:
                 word = orm_morph.best_parse(word)
             word_dict[word] += 1
@@ -145,7 +151,7 @@ class NER_DataLoader():
 
         return tag_vocab, word_vocab, char_vocab
 
-    def read_files_lr(self, paths, test_path):
+    def read_files_lr(self, paths, setEpaths):
         # word_list = []
         # char_list = []
         # tag_list = []
@@ -168,15 +174,18 @@ class NER_DataLoader():
             _read_a_file(path)
 
         #reading from SetE
-        with codecs.open(test_path, "r", "utf-8") as fin:
-            for line in fin:
-                fields = line.strip().split()
-                for word in fields:
-                    for c in word:
-                        char_set.add(c)
-                    if self.orm_norm:
-                        word = orm_morph.best_parse(word)
-                    word_dict[word] += 1
+        for path in setEpaths:
+            with codecs.open(path, "r", "utf-8") as fin:
+                for line in fin:
+                    fields = line.strip().split()
+                    for word in fields:
+                        for c in word:
+                            char_set.add(c)
+                        if self.orm_lower:
+                            word = word.lower()
+                        if self.orm_norm:
+                            word = orm_morph.best_parse(word)
+                        word_dict[word] += 1
 
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
@@ -201,14 +210,16 @@ class NER_DataLoader():
                 word = fields[0]
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
-                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+
+                if self.orm_lower:
+                    word = word.lower()
 
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
-
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
@@ -237,6 +248,7 @@ class NER_DataLoader():
         return sents, char_sents, tgt_tags, discrete_features, bc_features
 
     def get_lr_test(self, path, lang):
+        # read setE.txt format
         sents = []
         char_sents = []
         discrete_features = []
@@ -248,7 +260,9 @@ class NER_DataLoader():
             temp_bc = []
             for word in one_sent:
                 if self.use_brown_cluster:
-                    temp_bc.append([self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"]])
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+                if self.orm_lower:
+                    word = word.lower()
                 if self.orm_norm:
                     word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
@@ -273,3 +287,60 @@ class NER_DataLoader():
             self.num_feats = 0
 
         return sents, char_sents, discrete_features, original_sents, bc_features
+
+    def get_lr_test_setE(self, path, lang):
+        # read setE.conll format
+        sents = []
+        char_sents = []
+        discrete_features = []
+        bc_features = []
+        doc_ids = []
+        original_sents = []
+
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_char = []
+            temp_bc = []
+            temp_ori_sent = []
+            for w in one_sent:
+                tokens = w.split('\t')
+                word = tokens[0]
+                temp_ori_sent.append(word)
+                docfile = tokens[3]
+                if self.use_brown_cluster:
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+
+                if self.orm_lower:
+                    word = word.lower()
+
+                if self.orm_norm:
+                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+
+            doc_ids.append(docfile.split('_')[1])
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            bc_features.append(temp_bc)
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            original_sents.append(temp_ori_sent)
+            # print len(discrete_features[-1])
+
+        with codecs.open(path, "r", "utf-8") as fin:
+            one_sent = []
+            for line in fin:
+                if line.strip() == "":
+                    if len(one_sent) > 0:
+                        add_sent(one_sent)
+                    one_sent = []
+                else:
+                    one_sent.append(line.strip())
+            if len(one_sent) > 0:
+                add_sent(one_sent)
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
+
+        return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids
