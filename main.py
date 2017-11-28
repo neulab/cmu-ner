@@ -262,7 +262,7 @@ def main(args):
                     # TODO: Test on full setE
 
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, argsl)
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -554,11 +554,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
+
     args.save_to_path = args.save_to_path + args.model_name + ".model"
     args.load_from_path = args.save_to_path
+
     print args
 
     if args.mode == "train":
+        args.save_to_path = args.save_to_path + args.model_name + ".model"
         main(args)
     elif args.mode == "test_1":
         test_single_model(args)
