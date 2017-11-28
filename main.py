@@ -21,6 +21,7 @@ def evaluate(data_loader, path, model, model_name):
     gold_standards = []
     i = 0
     for sent, char_sent, tgt_tag, discrete_feature, bc_feat in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
         best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
 
@@ -76,7 +77,7 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
         predictions.append(best_path)
 
         i += 1
-        if i % 1000 == 0:
+        if i % 100 == 0:
             print "Testing processed %d lines " % i
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
@@ -146,7 +147,7 @@ def test_on_full_setE(ner_data_loader, args):
         raise NotImplementedError
 
     model.load()
-    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name,args.score_file, args.setEconll)
+    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name, args.score_file, args.setEconll)
     return acc, precision, recall, f1
 
 
