@@ -188,7 +188,8 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                         annot_id[doc_id] += 1
                         prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2, pred_tag))
                         unpredicted_spans[doc_id].remove(unpredict_span)
-            print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
+            if add_label > 0:
+                print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
