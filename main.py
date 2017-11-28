@@ -262,7 +262,7 @@ def main(args):
                     # TODO: Test on full setE
 
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, argsl)
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
