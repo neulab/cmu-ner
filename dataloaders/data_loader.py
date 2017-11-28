@@ -4,10 +4,8 @@ import os
 from utils.features import *
 from utils.util import *
 
-from utils import orm_morph
-
-# from utils.orm_norm import orm_morph
-
+#from utils.orm_norm import orm_morph
+# from utils import orm_morph
 
 class NER_DataLoader():
     def __init__(self, args):
@@ -49,7 +47,7 @@ class NER_DataLoader():
             else:
                 paths_to_read = [self.train_path]
                 setEpaths = [self.dev_path, self.test_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read, setEpaths)
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,setEpaths)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
@@ -248,7 +246,6 @@ class NER_DataLoader():
         return sents, char_sents, tgt_tags, discrete_features, bc_features
 
     def get_lr_test(self, path, lang):
-        # read setE.txt format
         sents = []
         char_sents = []
         discrete_features = []
@@ -289,7 +286,6 @@ class NER_DataLoader():
         return sents, char_sents, discrete_features, original_sents, bc_features
 
     def get_lr_test_setE(self, path, lang):
-        # read setE.conll format
         sents = []
         char_sents = []
         discrete_features = []
