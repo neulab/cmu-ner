@@ -321,7 +321,7 @@ def test_with_two_models(args):
 
     if args.model_arc == "char_cnn":
         print "Using Char CNN model!"
-        model = vanilla_NER_CRF_model(args, ner_data_loader, ner_data_loader_special_normal)
+        model = vanilla_NER_CRF_model(args, ner_data_loader_special_normal)
         model_lower = vanilla_NER_CRF_model(args, ner_data_loader)
     elif args.model_arc == "char_birnn":
         print "Using Char Birnn model!"
