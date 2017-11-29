@@ -158,9 +158,7 @@ def make_bucket_batches(data_collections, batch_size):
 
     batches = []
     # np.random.seed(2)
-    src_lens = buckets.keys()
-    shuffle(src_lens)
-    for src_len in src_lens:
+    for src_len in buckets:
         bucket = buckets[src_len]
         np.random.shuffle(bucket)
 

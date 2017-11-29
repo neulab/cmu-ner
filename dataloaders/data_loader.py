@@ -5,10 +5,10 @@ from utils.features import *
 from utils.util import *
 
 #from utils.orm_norm import orm_morph
-# from utils import orm_morph
+from utils import orm_morph
 
 class NER_DataLoader():
-    def __init__(self, args):
+    def __init__(self, args, special_normal=False):
         # This is data loader as well as feature extractor!!
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         ''' TODO: 1. normalizing all digits
@@ -27,6 +27,10 @@ class NER_DataLoader():
         self.use_brown_cluster = args.use_brown_cluster
         self.orm_norm = args.oromo_normalize
         self.orm_lower = args.train_lowercase_oromo
+
+        if special_normal:
+            self.orm_norm = False
+            self.orm_lower = False
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
@@ -246,6 +250,7 @@ class NER_DataLoader():
         return sents, char_sents, tgt_tags, discrete_features, bc_features
 
     def get_lr_test(self, path, lang):
+        # setE.txt
         sents = []
         char_sents = []
         discrete_features = []
@@ -286,6 +291,7 @@ class NER_DataLoader():
         return sents, char_sents, discrete_features, original_sents, bc_features
 
     def get_lr_test_setE(self, path, lang):
+        # setE.conll
         sents = []
         char_sents = []
         discrete_features = []
@@ -303,14 +309,23 @@ class NER_DataLoader():
                 word = tokens[0]
                 temp_ori_sent.append(word)
                 docfile = tokens[3]
+                doc_type = docfile.split('_')[1]
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
 
-                if self.orm_lower:
-                    word = word.lower()
+                if self.args.mode == "test_2":
+                    if doc_type == "DF":
+                        if self.orm_lower:
+                            word = word.lower()
 
-                if self.orm_norm:
-                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                        if self.orm_norm:
+                            word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                else:
+                    if self.orm_lower:
+                        word = word.lower()
+
+                    if self.orm_norm:
+                        word = orm_morph.best_parse(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
 
