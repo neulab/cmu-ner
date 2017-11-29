@@ -364,16 +364,16 @@ def test_with_two_models(args):
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         if doc_id == "SN":
-            best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+            best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
             predict_with_lower += 1
         else:
-            best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+            best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
         predictions.append(best_path)
 
         i += 1
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
-            
+
     print "%d sents in setE are predicted by the combined model!" % predict_with_lower
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
