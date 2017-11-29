@@ -312,11 +312,16 @@ def post_process(args, pred_file):
 
 def test_with_two_models(args):
     # This function is specific for oromo.
-    # We should add --train_lower_case_oromo or --oromo_normalize if the combined model is lower case model or normalized
+    '''We should add --train_lower_case_oromo or --oromo_normalize if the combined model is lower case model or normalized'''
     ner_data_loader = NER_DataLoader(args)
     ner_data_loader_special_normal = NER_DataLoader(args, special_normal=True)
     _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
     _, _, _, _, _ = ner_data_loader_special_normal.get_data_set(args.train_path, args.lang)
+    combine_data_loader = Dataloader_Combine(ner_data_loader_special_normal.word_to_id,
+                                             ner_data_loader.word_to_id,
+                                             ner_data_loader.char_to_id,
+                                             ner_data_loader_special_normal.brown_cluster_dicts,
+                                             ner_data_loader.brown_cluster_dicts)
     assert args.load_from_path is not None and args.lower_case_model_path is not None, "Path to the saved models are not provided!"
 
     if args.model_arc == "char_cnn":
@@ -345,7 +350,7 @@ def test_with_two_models(args):
     model.load()
     model_lower.load(args.lower_case_model_path)
 
-    sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = ner_data_loader.get_lr_test_setE(args.setEconll, args.lang)
+    sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = combine_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
     print "Evaluation data size: ", len(sents)
     prefix = args.model_name + "_" + str(uid)
