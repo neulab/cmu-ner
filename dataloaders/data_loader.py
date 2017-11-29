@@ -5,10 +5,10 @@ from utils.features import *
 from utils.util import *
 
 #from utils.orm_norm import orm_morph
-# from utils import orm_morph
+from utils import orm_morph
 
 class NER_DataLoader():
-    def __init__(self, args):
+    def __init__(self, args, special_normal=False):
         # This is data loader as well as feature extractor!!
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         ''' TODO: 1. normalizing all digits
@@ -28,9 +28,15 @@ class NER_DataLoader():
         self.orm_norm = args.oromo_normalize
         self.orm_lower = args.train_lowercase_oromo
 
+        if special_normal:
+            self.orm_norm = False
+            self.orm_lower = False
+
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
             self.brown_cluster_dicts['<unk>'] = 499
+        else:
+            self.brown_cluster_dicts = None
 
         if False and os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
@@ -246,6 +252,7 @@ class NER_DataLoader():
         return sents, char_sents, tgt_tags, discrete_features, bc_features
 
     def get_lr_test(self, path, lang):
+        # setE.txt
         sents = []
         char_sents = []
         discrete_features = []
@@ -286,6 +293,7 @@ class NER_DataLoader():
         return sents, char_sents, discrete_features, original_sents, bc_features
 
     def get_lr_test_setE(self, path, lang):
+        # setE.conll
         sents = []
         char_sents = []
         discrete_features = []
@@ -303,6 +311,7 @@ class NER_DataLoader():
                 word = tokens[0]
                 temp_ori_sent.append(word)
                 docfile = tokens[3]
+                doc_type = docfile.split('_')[1]
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
 
@@ -310,8 +319,88 @@ class NER_DataLoader():
                     word = word.lower()
 
                 if self.orm_norm:
-                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    word = orm_morph.best_parse(word)
+
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+
+            doc_ids.append(docfile.split('_')[1])
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            bc_features.append(temp_bc)
+            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            original_sents.append(temp_ori_sent)
+            # print len(discrete_features[-1])
+
+        with codecs.open(path, "r", "utf-8") as fin:
+            one_sent = []
+            for line in fin:
+                if line.strip() == "":
+                    if len(one_sent) > 0:
+                        add_sent(one_sent)
+                    one_sent = []
+                else:
+                    one_sent.append(line.strip())
+            if len(one_sent) > 0:
+                add_sent(one_sent)
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
+
+        return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids
+
+
+class Dataloader_Combine():
+    def __init__(self, args, normal_vocab, lower_vocab, char_to_id, brown_cluster_dicts=None, lower_brown_dicts=None):
+        self.word_to_id = normal_vocab
+        self.lower_word_to_id = lower_vocab
+
+        self.char_to_id = char_to_id
+        self.brown_cluster_dicts = brown_cluster_dicts
+        self.lower_brown_dicts = lower_brown_dicts
+
+        self.use_discrete_feature = args.use_discrete_features
+        self.use_brown_cluster = args.use_brown_cluster
+        self.orm_norm = args.oromo_normalize
+        self.orm_lower = args.train_lowercase_oromo
+
+    def get_lr_test_setE(self, path, lang):
+        # setE.conll
+        sents = []
+        char_sents = []
+        discrete_features = []
+        bc_features = []
+        doc_ids = []
+        original_sents = []
+
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_char = []
+            temp_bc = []
+            temp_ori_sent = []
+            for w in one_sent:
+                tokens = w.split('\t')
+                word = tokens[0]
+                temp_ori_sent.append(word)
+                docfile = tokens[3]
+                doc_type = docfile.split('_')[1]
+                if self.use_brown_cluster:
+                    if doc_type == "SN":
+                        temp_bc.append(self.lower_brown_dicts[word] if word in self.lower_brown_dicts else self.lower_brown_dicts["<unk>"])
+                    else:
+                        temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
+
+                if doc_type == "SN":
+                    if self.orm_lower:
+                        word = word.lower()
+
+                    if self.orm_norm:
+                        word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    temp_sent.append(self.lower_word_to_id[word] if word in self.lower_word_to_id else self.lower_word_to_id["<unk>"])
+                else:
+                    temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
 
             doc_ids.append(docfile.split('_')[1])

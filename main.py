@@ -295,7 +295,8 @@ def post_process(args, pred_file):
     post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
-    post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file, label_propagate=args.label_prop)
+    post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
+                    label_propagate=args.label_prop, conf_num=args.confidence_num)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -311,29 +312,38 @@ def post_process(args, pred_file):
 
 def test_with_two_models(args):
     # This function is specific for oromo.
+    '''We should add --train_lower_case_oromo or --oromo_normalize if the combined model is lower case model or normalized'''
     ner_data_loader = NER_DataLoader(args)
+    ner_data_loader_special_normal = NER_DataLoader(args, special_normal=True)
     _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
+    _, _, _, _, _ = ner_data_loader_special_normal.get_data_set(args.train_path, args.lang)
+    combine_data_loader = Dataloader_Combine(args,
+                                             ner_data_loader_special_normal.word_to_id,
+                                             ner_data_loader.word_to_id,
+                                             ner_data_loader.char_to_id,
+                                             ner_data_loader_special_normal.brown_cluster_dicts,
+                                             ner_data_loader.brown_cluster_dicts)
     assert args.load_from_path is not None and args.lower_case_model_path is not None, "Path to the saved models are not provided!"
 
     if args.model_arc == "char_cnn":
         print "Using Char CNN model!"
-        model = vanilla_NER_CRF_model(args, ner_data_loader)
+        model = vanilla_NER_CRF_model(args, ner_data_loader_special_normal)
         model_lower = vanilla_NER_CRF_model(args, ner_data_loader)
     elif args.model_arc == "char_birnn":
         print "Using Char Birnn model!"
-        model = BiRNN_CRF_model(args, ner_data_loader)
+        model = BiRNN_CRF_model(args, ner_data_loader_special_normal)
         model_lower = BiRNN_CRF_model(args, ner_data_loader)
     elif args.model_arc == "char_birnn_cnn":
         print "Using Char Birnn-CNN model!"
-        model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+        model = CNN_BiRNN_CRF_model(args, ner_data_loader_special_normal)
         model_lower = CNN_BiRNN_CRF_model(args, ner_data_loader)
     elif args.model_arc == "sep":
         print "Using seperate encoders for embedding and features (cnn and birnn char)!"
-        model = Sep_Encoder_CRF_model(args, ner_data_loader)
+        model = Sep_Encoder_CRF_model(args, ner_data_loader_special_normal)
         model_lower = Sep_Encoder_CRF_model(args, ner_data_loader)
     elif args.model_arc == "sep_cnn_only":
         print "Using seperate encoders for embedding and features (cnn char)!"
-        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+        model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader_special_normal)
         model_lower = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
     else:
         raise NotImplementedError
@@ -341,26 +351,30 @@ def test_with_two_models(args):
     model.load()
     model_lower.load(args.lower_case_model_path)
 
-    sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = ner_data_loader.get_lr_test_setE(args.setEconll, args.lang)
+    sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = combine_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
     print "Evaluation data size: ", len(sents)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
 
+    predict_with_lower = 0
     for sent, char_sent, discrete_feature, bc_feat, doc_id in zip(sents, char_sents, discrete_features, bc_feats, doc_ids):
         dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         if doc_id == "SN":
-            best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
-        else:
             best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+            predict_with_lower += 1
+        else:
+            best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
         predictions.append(best_path)
 
         i += 1
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
+
+    print "%d sents in setE are predicted by the combined model!" % predict_with_lower
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
     with codecs.open(pred_output_fname, "w", "utf-8") as fout:
@@ -542,6 +556,7 @@ if __name__ == "__main__":
 
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
+    parser.add_argument("--confidence_num", default=2, type=str)
     parser.add_argument("--author_file", default=None, type=str)
     parser.add_argument("--lookup_file", default=None, type=str)
 

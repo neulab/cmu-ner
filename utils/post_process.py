@@ -1,8 +1,29 @@
-
 import codecs
 from collections import defaultdict
 # "GENERAL lookup table"
 tags = set(['GPE', 'PER', 'ORG', 'LOC'])
+
+
+def read_gold_file(gold_path):
+    with codecs.open(gold_path, "utf-8", 'r') as fin:
+        doc_set = set()
+        for line in fin:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+
+            line = line.decode('utf-8')
+            tokens = line.split('\t')
+
+            doc_id = tokens[0]
+            start = int(tokens[1])
+            end = int(tokens[2])
+            ner = tokens[5].split('/')[0]
+
+            doc_set.add((doc_id, start, end))
+
+        print 'num of annotated doc: %d' % len(doc_set)
+    return doc_set
 
 
 def make_darpa_format(span, curr_docum, curr_anot, start, end, tag):
@@ -13,19 +34,25 @@ def make_darpa_format(span, curr_docum, curr_anot, start, end, tag):
 
 
 def combine_lookup_table(lookup_files):
-    lookup_table = dict()
+    lookup_table = defaultdict(lambda: set())
 
     for key, fname in lookup_files.iteritems():
         if key in tags:
             with codecs.open(fname, "r", "utf-8") as fin:
                 for line in fin:
-                    lookup_table[line.strip()] = key
+                    lookup_table[line.strip()].add(key)
         else:
             with codecs.open(fname, "r", "utf-8") as fin:
                 for line in fin:
                     fs = line.strip().split('\t')
-                    lookup_table[fs[0]] = fs[1]
-    return lookup_table
+                    lookup_table[fs[0]].add(fs[1])
+    new_lookup_table = dict()
+
+    # remove spans that are annotated with multiple entities
+    for key, value in lookup_table.iteritems():
+        if len(value) == 1:
+            new_lookup_table[key] = list(value)[0]
+    return new_lookup_table
 
 
 def single_lookup_table(lookup_file, tag):
@@ -53,7 +80,14 @@ def find_ngrams(sent, starts, ends, n):
     return all_ngrams, all_starts, all_ends
 
 
-def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None, label_propagate=True):
+def post_processing(path_darpa_prediction,
+                    path_to_full_setE,
+                    path_to_author,
+                    output_file,
+                    lookup_files=None,
+                    label_propagate=True,
+                    conf_num=0,
+                    gold_file_path=None):
     '''
 
     :param path_darpa_prediction: Final output
@@ -68,10 +102,14 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
     unpredicted_spans = defaultdict(lambda: list()) # (doc_id: [(ngram_token, start, end)])
     MAX_NGRAM = 5
     prediction_list = []
+    predicted_spans = defaultdict(lambda: list())
+
     if lookup_files is not None:
         lookup_table = combine_lookup_table(lookup_files)
     author_lookup = single_lookup_table(path_to_author, "PER")
     annot_id = defaultdict(lambda: 0) # doc_id:annotation num
+
+    gold_spans = read_gold_file(gold_file_path)
 
     def _look_up(span, doc_attribute):
         if doc_attribute == "DF" and span in author_lookup:
@@ -79,6 +117,18 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
         if lookup_files is not None and span in lookup_table:
             return lookup_table[span]
         return None
+
+    def _is_overlap(s1, e1, s2, e2):
+        # Condition: s1 < e1, s2 < e2
+        return not(e1 < s2 or e2 < s1)
+
+    def _check_cross_annotations(list_spans, target_start, target_end):
+        flag = False
+        for (s, e) in list_spans:
+            if _is_overlap(s, e, target_start, target_end):
+                flag = True
+                break
+        return flag
 
     add_labels = 0  # includes both fixed labels and added labels
     # First using the lookup table to fix up the current predictions
@@ -95,13 +145,13 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
             start_id, end_id = span_id[0], span_id[1]
 
             lookup_tag = _look_up(span, doc_attribute)
+            if lookup_tag is not None and lookup_tag != predict_tag and (doc_id, start_id, end_id) in gold_spans:
+                add_labels += 1
             predict_tag = predict_tag if lookup_tag is None else lookup_tag
 
-            if lookup_tag is not None and lookup_tag != predict_tag:
-                add_labels += 1
             predicted_doc[doc_id][(span, start_id, end_id)] = predict_tag
             prediction_list.append(make_darpa_format(span, doc_id, annot_id[doc_id], start_id, end_id, predict_tag))
-
+            predicted_spans[doc_id].append((start_id, end_id))
     # Second, iterate over the full setE using the lookup tables to completed the predicted dict
     # In the mean time, give statistics of ngrams for label propagation.
     ngram_freq = defaultdict(lambda: 0)
@@ -112,7 +162,7 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
         doc_attribute = ""
         for line in fin:
             tokens = line.split('\t')
-            if line == "" or line == "\n":
+            if len(tokens) == 0 or line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
@@ -120,11 +170,13 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                     predict_tag = _look_up(ngram, doc_attribute)
                     key = (ngram, s[0], e[-1])
                     if predict_tag is not None:
-                        if key not in predicted_doc[doc_id]:
+                        if key not in predicted_doc[doc_id] and not _check_cross_annotations(predicted_spans[doc_id], s[0], s[-1]):
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
                             prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1], predict_tag))
-                            add_labels += 1
+                            predicted_spans[doc_id].append(s[0], e[-1])
+                            if (doc_id, s[0], e[-1]) in gold_spans:
+                                add_labels += 1
                     else:
                         if key not in predicted_doc[doc_id]:
                             unpredicted_spans[doc_id].append(key)
@@ -142,11 +194,7 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                 start_ids.append(start)
                 end_ids.append(end)
 
-    print("Total %d labels get fixed by the lookup tables!" % (add_labels,))
-
-    def _is_overlap(s1, e1, s2, e2):
-        # Condition: s1 < e1, s2 < e2
-        return not(e1 < s2 or e2 < s1)
+    print("Total %d labels in the gold spans get fixed by the lookup tables!" % (add_labels,))
 
     tot_prop_label = 0
     if label_propagate:
@@ -168,13 +216,16 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                     if vote > max_vote:
                         max_vote = vote
                         max_tag = tag
-                new_vote_tag[span] = (max_tag, vote_tag[span][max_tag])
+                new_vote_tag[span] = (max_tag, vote_tag[span][max_tag], max_vote)
 
             add_label = 0
             for unpredict_span in unpredicted_spans[doc_id]:
                 s2, e2 = unpredict_span[1], unpredict_span[2]
                 uspan = unpredict_span[0]
                 if uspan in new_vote_tag:
+                    # conservative propagation
+                    if new_vote_tag[uspan][2] <= conf_num:
+                        continue
                     pred_tag = new_vote_tag[uspan][0]
                     # check if there is an overlap between spans
                     flag = True
@@ -202,10 +253,12 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
 
 if __name__ == "__main__":
     author_list = "../eval/oromo/set0E_author.txt"
-    setE_conll = "../eval/oromo/setE.conll"
-    pred = "../eval/oromo/cp1_orm_som_trans_0.015_500_somTEmb_8bc874_darpa_output.conll"
-    lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
+    author_list = "./debug/set012E_author.txt"
+    setE_conll = "../new_datasets/setE/tig/setE.conll"
+    pred = "./debug/pred.conll"
+    # pred = "./post_test.txt"
+    # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
     output_file = "post_test.txt"
-    post_processing(pred, setE_conll, author_list, output_file, lookup_file, label_propagate=False)
+    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
