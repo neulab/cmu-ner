@@ -1,4 +1,3 @@
-
 import codecs
 from collections import defaultdict
 # "GENERAL lookup table"
@@ -103,7 +102,7 @@ def post_processing(path_darpa_prediction,
     unpredicted_spans = defaultdict(lambda: list()) # (doc_id: [(ngram_token, start, end)])
     MAX_NGRAM = 5
     prediction_list = []
-    predicted_spans = dict(lambda: list())
+    predicted_spans = defaultdict(lambda: list())
 
     if lookup_files is not None:
         lookup_table = combine_lookup_table(lookup_files)
@@ -171,10 +170,11 @@ def post_processing(path_darpa_prediction,
                     predict_tag = _look_up(ngram, doc_attribute)
                     key = (ngram, s[0], e[-1])
                     if predict_tag is not None:
-                        if key not in predicted_doc[doc_id] and not _check_cross_annotations(gold_spans[doc_id], s[0], s[-1]):
+                        if key not in predicted_doc[doc_id] and not _check_cross_annotations(predicted_spans[doc_id], s[0], s[-1]):
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
                             prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1], predict_tag))
+                            predicted_spans[doc_id].append(s[0], e[-1])
                             if (doc_id, s[0], e[-1]) in gold_spans:
                                 add_labels += 1
                     else:
