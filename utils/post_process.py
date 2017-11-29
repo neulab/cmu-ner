@@ -53,7 +53,7 @@ def find_ngrams(sent, starts, ends, n):
     return all_ngrams, all_starts, all_ends
 
 
-def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None, label_propagate=True):
+def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, output_file, lookup_files=None, label_propagate=True, conf_num=0):
     '''
 
     :param path_darpa_prediction: Final output
@@ -95,10 +95,10 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
             start_id, end_id = span_id[0], span_id[1]
 
             lookup_tag = _look_up(span, doc_attribute)
-            predict_tag = predict_tag if lookup_tag is None else lookup_tag
-
             if lookup_tag is not None and lookup_tag != predict_tag:
                 add_labels += 1
+            predict_tag = predict_tag if lookup_tag is None else lookup_tag
+
             predicted_doc[doc_id][(span, start_id, end_id)] = predict_tag
             prediction_list.append(make_darpa_format(span, doc_id, annot_id[doc_id], start_id, end_id, predict_tag))
 
@@ -112,7 +112,7 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
         doc_attribute = ""
         for line in fin:
             tokens = line.split('\t')
-            if line == "" or line == "\n":
+            if len(tokens) == 0 or line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
@@ -120,6 +120,7 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
                     predict_tag = _look_up(ngram, doc_attribute)
                     key = (ngram, s[0], e[-1])
                     if predict_tag is not None:
+                        print "here"
                         if key not in predicted_doc[doc_id]:
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
@@ -202,10 +203,12 @@ def post_processing(path_darpa_prediction, path_to_full_setE, path_to_author, ou
 
 if __name__ == "__main__":
     author_list = "../eval/oromo/set0E_author.txt"
-    setE_conll = "../eval/oromo/setE.conll"
-    pred = "../eval/oromo/cp1_orm_som_trans_0.015_500_somTEmb_8bc874_darpa_output.conll"
-    lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
+    author_list = "./debug/set012E_author.txt"
+    setE_conll = "../new_datasets/setE/tig/setE.conll"
+    pred = "./debug/pred.conll"
+    # pred = "./post_test.txt"
+    # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
     output_file = "post_test.txt"
-    post_processing(pred, setE_conll, author_list, output_file, lookup_file, label_propagate=False)
+    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
