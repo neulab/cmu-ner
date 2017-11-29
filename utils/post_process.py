@@ -5,7 +5,7 @@ tags = set(['GPE', 'PER', 'ORG', 'LOC'])
 
 
 def read_gold_file(gold_path):
-    with codecs.open(gold_path, "utf-8", 'r') as fin:
+    with codecs.open(gold_path, "r", "utf-8") as fin:
         doc_set = set()
         for line in fin:
             line = line.strip()
