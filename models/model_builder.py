@@ -25,10 +25,12 @@ class CRF_Model(object):
         else:
             print('Save to path not provided!')
 
-    def load(self):
-        if self.load_from is not None:
-            print('Load model parameters from %s!' % self.load_from)
-            self.model.populate(self.load_from)
+    def load(self, path=None):
+        if path is None:
+            path = self.load_from
+        if self.load_from is not None or path is not None:
+            print('Load model parameters from %s!' % path)
+            self.model.populate(path)
         else:
             print('Load from path not provided!')
 

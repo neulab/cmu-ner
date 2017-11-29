@@ -339,7 +339,7 @@ def test_with_two_models(args):
         raise NotImplementedError
 
     model.load()
-    model_lower.load()
+    model_lower.load(args.lower_case_model_path)
 
     sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = ner_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
@@ -349,9 +349,10 @@ def test_with_two_models(args):
     i = 0
 
     for sent, char_sent, discrete_feature, bc_feat, doc_id in zip(sents, char_sents, discrete_features, bc_feats, doc_ids):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
-        if doc_id == "DF":
+        if doc_id == "SN":
             best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
         else:
             best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
@@ -429,6 +430,7 @@ def test_single_model(args):
     i = 0
 
     for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
@@ -558,12 +560,11 @@ if __name__ == "__main__":
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
-    args.load_from_path = args.save_to_path
 
     print args
 
     if args.mode == "train":
-        args.save_to_path = args.save_to_path + args.model_name + ".model"
+        args.load_from_path = args.save_to_path
         main(args)
     elif args.mode == "test_1":
         test_single_model(args)
