@@ -296,7 +296,7 @@ def post_process(args, pred_file):
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
-                    label_propagate=args.label_prop, conf_num=args.confidence_num)
+                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -567,6 +567,7 @@ if __name__ == "__main__":
     parser.add_argument("--score_file", type=str, default=None,help="path to the scoring file for full setE conll file")
     parser.add_argument("--score_file_10", type=str, default=None, help="path to the scoring file for 10% setE conll file")
 
+    parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
     parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1"],
                         help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
@@ -575,7 +576,7 @@ if __name__ == "__main__":
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
-
+    args.gold_setE_path = args.gold_setE_path + args.lang + "_setE_edl.tac"
     print args
 
     if args.mode == "train":
