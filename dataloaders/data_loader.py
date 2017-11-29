@@ -387,12 +387,12 @@ class Dataloader_Combine():
                 docfile = tokens[3]
                 doc_type = docfile.split('_')[1]
                 if self.use_brown_cluster:
-                    if doc_type == "DF":
+                    if doc_type == "SN":
                         temp_bc.append(self.lower_brown_dicts[word] if word in self.lower_brown_dicts else self.lower_brown_dicts["<unk>"])
                     else:
                         temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
 
-                if doc_type == "DF":
+                if doc_type == "SN":
                     if self.orm_lower:
                         word = word.lower()
 

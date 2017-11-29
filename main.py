@@ -317,7 +317,8 @@ def test_with_two_models(args):
     ner_data_loader_special_normal = NER_DataLoader(args, special_normal=True)
     _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
     _, _, _, _, _ = ner_data_loader_special_normal.get_data_set(args.train_path, args.lang)
-    combine_data_loader = Dataloader_Combine(ner_data_loader_special_normal.word_to_id,
+    combine_data_loader = Dataloader_Combine(args,
+                                             ner_data_loader_special_normal.word_to_id,
                                              ner_data_loader.word_to_id,
                                              ner_data_loader.char_to_id,
                                              ner_data_loader_special_normal.brown_cluster_dicts,
@@ -357,12 +358,14 @@ def test_with_two_models(args):
     predictions = []
     i = 0
 
+    predict_with_lower = 0
     for sent, char_sent, discrete_feature, bc_feat, doc_id in zip(sents, char_sents, discrete_features, bc_feats, doc_ids):
         dy.renew_cg()
         sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
 
         if doc_id == "SN":
             best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+            predict_with_lower += 1
         else:
             best_score, best_path = model_lower.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
         predictions.append(best_path)
@@ -370,6 +373,8 @@ def test_with_two_models(args):
         i += 1
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
+            
+    print "%d sents in setE are predicted by the combined model!" % predict_with_lower
 
     pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
     with codecs.open(pred_output_fname, "w", "utf-8") as fout:
