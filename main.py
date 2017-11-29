@@ -564,7 +564,7 @@ if __name__ == "__main__":
     print args
 
     if args.mode == "train":
-        args.save_to_path = args.save_to_path + args.model_name + ".model"
+        args.load_from_path = args.save_to_path
         main(args)
     elif args.mode == "test_1":
         test_single_model(args)
