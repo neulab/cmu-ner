@@ -174,7 +174,7 @@ def post_processing(path_darpa_prediction,
                             predicted_doc[doc_id][key] = predict_tag
                             annot_id[doc_id] += 1
                             prediction_list.append(make_darpa_format(ngram, doc_id, annot_id[doc_id], s[0], e[-1], predict_tag))
-                            predicted_spans[doc_id].append(s[0], e[-1])
+                            predicted_spans[doc_id].append((s[0], e[-1]))
                             if (doc_id, s[0], e[-1]) in gold_spans:
                                 add_labels += 1
                     else:
