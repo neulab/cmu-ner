@@ -638,12 +638,13 @@ if __name__ == "__main__":
     parser.add_argument("--feature_birnn_hidden_dim", default=50, type=int, action="store")
 
     parser.add_argument("--use_discrete_features", default=False, action="store_true", help="David's indicator features")
+    parser.add_argument("--feature_dim", type=int, default=10, help="dimension of discrete features")
     parser.add_argument("--use_brown_cluster", default=False, action="store_true")
     parser.add_argument("--brown_cluster_path", action="store", type=str, help="path to the brown cluster features")
     parser.add_argument("--brown_cluster_num", default=500, type=int, action="store")
+    parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--use_gazatter", default=False, action="store_true")
     parser.add_argument("--gazatter_path", action="store", type=str)
-    parser.add_argument("--feature_dim", type=int, default=10, help="dimension of discrete features")
 
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
