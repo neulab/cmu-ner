@@ -164,6 +164,9 @@ def post_processing(path_darpa_prediction,
             tokens = line.split('\t')
             if len(tokens) == 0 or line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
+                print ngrams
+                print starts
+                print ends
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
                     ngram_freq[ngram] += 1
@@ -234,14 +237,16 @@ def post_processing(path_darpa_prediction,
                             print "There is overlap: ", (s1, e1), (s2, e2)
                             flag = False
                             break
-                    if flag:
+                    if flag and not _check_cross_annotations(predicted_spans[doc_id], s2, e2):
                         # propagate the label
-                        add_label += 1
+                        if (doc_id, s2, e2) in gold_spans:
+                            add_label += 1
                         annot_id[doc_id] += 1
                         prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], s2, e2, pred_tag))
+                        predicted_spans[doc_id].append((s2, e2))
                         unpredicted_spans[doc_id].remove(unpredict_span)
-            tot_prop_label += add_label
             if add_label > 0:
+                tot_prop_label += add_label
                 print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
     print("Total %d labels get propagated within document!" % (tot_prop_label, ))
