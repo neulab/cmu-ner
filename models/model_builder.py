@@ -13,12 +13,6 @@ class CRF_Model(object):
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        raise NotImplementedError
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        raise NotImplementedError
-
     def save(self):
         if self.save_to is not None:
             self.model.save(self.save_to)
@@ -34,6 +28,20 @@ class CRF_Model(object):
         else:
             print('Load from path not provided!')
 
+    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
+        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
+        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
+        return crf_loss#, sum_s, sent_s
+
+    def eval(self, sents, char_sents, feats, bc_feats, training=False):
+        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
+        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
+        return  best_score, best_path
+
+    def eval_scores(self, sents, char_sents, feats, bc_feats, training=False):
+        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
+        tag_scores, transit_score = self.crf_decoder.get_crf_scores(birnn_outputs)
+        return tag_scores, transit_score
 
 class vanilla_NER_CRF_model(CRF_Model):
     ''' Implement End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. '''
@@ -121,16 +129,6 @@ class vanilla_NER_CRF_model(CRF_Model):
 
         return birnn_outputs
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss#, sum_s, sent_s
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
-        return best_score, best_path
-
 
 class BiRNN_CRF_model(CRF_Model):
     ''' The same as above, except that we replace the cnn layer for characters with BiRNN layer. '''
@@ -216,16 +214,6 @@ class BiRNN_CRF_model(CRF_Model):
         birnn_outputs = self.birnn_encoder.encode(concat_inputs, training=training)
 
         return birnn_outputs
-
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss#, sum_s, sent_s
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
-        return best_score, best_path
 
 
 class CNN_BiRNN_CRF_model(CRF_Model):
@@ -321,16 +309,6 @@ class CNN_BiRNN_CRF_model(CRF_Model):
         birnn_outputs = self.birnn_encoder.encode(concat_inputs, training=training)
 
         return birnn_outputs
-
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss#, sum_s, sent_s
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
-        return best_score, best_path
 
 
 class Sep_Encoder_CRF_model(CRF_Model):
@@ -437,16 +415,6 @@ class Sep_Encoder_CRF_model(CRF_Model):
 
         return birnn_outputs
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss#, sum_s, sent_s
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
-        return best_score, best_path
-
 
 class Sep_CNN_Encoder_CRF_model(CRF_Model):
     ''' Difference with CNN_BiRnn_CRF_Model: use two BiLSTM to model the embedding features (char and word) and linguistic features respectively. '''
@@ -542,12 +510,3 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
 
         return birnn_outputs
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
-        return crf_loss#, sum_s, sent_s
-
-    def eval(self, sents, char_sents, feats, bc_feats, training=False):
-        birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        best_score, best_path = self.crf_decoder.decoding(birnn_outputs)
-        return  best_score, best_path
