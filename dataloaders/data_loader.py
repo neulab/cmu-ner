@@ -7,6 +7,7 @@ from utils.util import *
 #from utils.orm_norm import orm_morph
 from utils import orm_morph
 
+
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
         # This is data loader as well as feature extractor!!
@@ -34,7 +35,7 @@ class NER_DataLoader():
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
-            self.brown_cluster_dicts['<unk>'] = 499
+            self.brown_cluster_dicts['<unk>'] = len(self.brown_cluster_dicts)
         else:
             self.brown_cluster_dicts = None
 
