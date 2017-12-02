@@ -164,9 +164,6 @@ def post_processing(path_darpa_prediction,
             tokens = line.split('\t')
             if len(tokens) == 0 or line == "" or line == "\n":
                 ngrams, starts, ends = find_ngrams(one_sent, start_ids, end_ids, MAX_NGRAM)
-                print ngrams
-                print starts
-                print ends
                 for ngram, s, e in zip(ngrams, starts, ends):
                     ngram = " ".join(ngram)
                     ngram_freq[ngram] += 1
