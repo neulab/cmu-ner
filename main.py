@@ -258,11 +258,16 @@ def main(args):
                         os.system("cp %s %s" % (final_darpa_output_fname, best_output_fname))
                 else:
                     bad_counter += 1
+                    if args.lr_decay and bad_counter >= 5:
+                        # TODO: Halve the learning rate
+                        bad_counter = 0
+                        model.load()
+                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr / (1 + epoch * lr_decay)))
+                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr / (1 + epoch * lr_decay))
+
                 if bad_counter > patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    # TODO: Test on full setE
-
                     #Test on full SetE
                     acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
                     results = [acc, precision, recall, f1]
@@ -274,11 +279,6 @@ def main(args):
                 valid_history.append(f1)
         epoch += 1
 
-        if args.lr_decay:
-            print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr/(1+epoch*lr_decay)))
-            trainer = dy.MomentumSGDTrainer(model.model, inital_lr/(1+epoch*lr_decay))
-
-    # TODO: Test on full setE
      # Test on full SetE
     acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
     results = [acc, precision, recall, f1]
@@ -489,6 +489,96 @@ def test_single_model(args):
     post_process(args, final_darpa_output_fname)
 
 
+def ensemble_test_single_model(args):
+    ner_data_loader = NER_DataLoader(args)
+    # ugly: get discrete number features
+    _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
+    paths = []
+    with open(args.ensemble_model_paths) as fin:
+        for line in fin:
+            paths.append(line.strip())
+    models = []
+    if args.model_arc == "char_cnn":
+        print "Using Char CNN model!"
+        models.append(vanilla_NER_CRF_model(args, ner_data_loader))
+    elif args.model_arc == "char_birnn":
+        print "Using Char Birnn model!"
+        models.append(BiRNN_CRF_model(args, ner_data_loader))
+    elif args.model_arc == "char_birnn_cnn":
+        print "Using Char Birnn-CNN model!"
+        models.append(CNN_BiRNN_CRF_model(args, ner_data_loader))
+    elif args.model_arc == "sep":
+        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+        models.append(Sep_Encoder_CRF_model(args, ner_data_loader))
+    elif args.model_arc == "sep_cnn_only":
+        print "Using seperate encoders for embedding and features (cnn char)!"
+        models.append(Sep_CNN_Encoder_CRF_model(args, ner_data_loader))
+    else:
+        raise NotImplementedError
+
+    for i, path in enumerate(paths):
+        models[i].load(path)
+
+    sents, char_sents, discrete_features, origin_sents, bc_feats = ner_data_loader.get_lr_test(
+        args.test_path, args.lang)
+
+    print "Evaluation data size: ", len(sents)
+    prefix = args.model_name + "_" + str(uid)
+    predictions = []
+    i = 0
+    print "Start ensembling using %d models!" % len(models)
+
+    for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        dy.renew_cg()
+        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
+        tag_scores = []
+        transit_scores = []
+        for model in models:
+            ts, trs = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
+            tag_scores.append(ts)
+            transit_scores.append(trs)
+
+        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores)
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
+    with codecs.open(pred_output_fname, "w", "utf-8") as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                if p not in ner_data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
+                fout.write(word + "\tNNP\tNP\t" + ner_data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    scoring_file = "../eval/%s_score_file" % (prefix)
+    run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
+
+    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+
+    prec = 0
+    recall = 0
+    f1 = 0
+    with codecs.open(scoring_file, 'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec = float(columns[-4])
+                recall = float(columns[-3])
+                f1 = float(columns[-2])
+                break
+
+    print("Precison=%f, Recall=%f, F1=%F." % (prec, recall, f1))
+
+    post_process(args, final_darpa_output_fname)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
@@ -547,12 +637,14 @@ if __name__ == "__main__":
 
     parser.add_argument("--feature_birnn_hidden_dim", default=50, type=int, action="store")
 
-    parser.add_argument("--use_discrete_features", default=False, action="store_true")
+    parser.add_argument("--use_discrete_features", default=False, action="store_true", help="David's indicator features")
+    parser.add_argument("--feature_dim", type=int, default=10, help="dimension of discrete features")
     parser.add_argument("--use_brown_cluster", default=False, action="store_true")
     parser.add_argument("--brown_cluster_path", action="store", type=str, help="path to the brown cluster features")
     parser.add_argument("--brown_cluster_num", default=500, type=int, action="store")
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
-    parser.add_argument("--feature_dim", type=int, default=30)
+    parser.add_argument("--use_gazatter", default=False, action="store_true")
+    parser.add_argument("--gazatter_path", action="store", type=str)
 
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
@@ -569,8 +661,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
-    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1"],
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "emsemble"],
                         help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
+    parser.add_argument("emsemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
@@ -586,5 +679,7 @@ if __name__ == "__main__":
         test_single_model(args)
     elif args.mode == "test_2":
         test_with_two_models(args)
+    elif args.mode == "ensemble":
+        ensemble_test_single_model(args)
     else:
         raise NotImplementedError

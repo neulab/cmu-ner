@@ -108,6 +108,20 @@ class chain_CRF_decoder(Decoder):
         loss = dy.sum_batches(forward_scores - gold_score) / batch_size
         return loss #, dy.sum_batches(forward_scores)/batch_size, dy.sum_batches(gold_score) / batch_size
 
+    def get_crf_scores(self, src_encodings):
+        W_src2tag_readout = dy.parameter(self.W_src2tag_readout)
+        b_src2tag_readout = dy.parameter(self.b_src2tag_readout)
+        W_score_tag = dy.parameter(self.W_scores_readout2tag)
+        b_score_tag = dy.parameter(self.b_scores_readout2tag)
+
+        tag_embs = [dy.tanh(dy.affine_transform([b_src2tag_readout, W_src2tag_readout, src_encoding]))
+                    for src_encoding in src_encodings]
+        tag_scores = [dy.affine_transform([b_score_tag, W_score_tag, tag_emb]) for tag_emb in tag_embs]
+
+        transpose_transition_score = dy.parameter(self.transition_matrix)  # (to, from)
+
+        return transpose_transition_score.npvalue(), [ts.npvalue() for ts in tag_scores]
+
     def decoding(self, src_encodings):
         ''' Viterbi decoding for a single sequence. '''
         W_src2tag_readout = dy.parameter(self.W_src2tag_readout)
@@ -152,6 +166,44 @@ class chain_CRF_decoder(Decoder):
 
     def cal_accuracy(self, pred_path, true_path):
         return np.sum(np.equal(pred_path, true_path).astype(np.float32)) / len(pred_path)
+
+
+def ensemble_viterbi_decoding(l_tag_scores, l_transit_score, tag_size):
+    back_trace_tags = []
+    start_id = tag_size - 2
+    end_id = tag_size - 1
+    max_tm1 = np.ones(tag_size) * -100.0
+    max_tm1[start_id] = 0.0
+
+    tag_scores = []
+    for i in range(len(l_tag_scores[0])):
+        tag_scores.append(sum([ts[i] for ts in l_tag_scores]) / len(l_tag_scores))
+    transpose_transition_score = sum(l_transit_score) / len(l_transit_score)  # (from, to)
+
+    for i, tag_score in enumerate(tag_scores):
+        max_tm1 = np.tile(np.expand_dims(max_tm1, axis=1), (1, tag_size))
+        max_t = max_tm1 + transpose_transition_score
+        if i != 0:
+            eval_score = max_t[:-2, :]
+        else:
+            eval_score = max_t
+        best_tag = np.argmax(eval_score, axis=0)
+        back_trace_tags.append(best_tag)
+        max_tm1 = eval_score[best_tag, range(tag_size)] + tag_score
+
+    terminal_max_T = max_tm1 + transpose_transition_score[:, end_id]
+    eval_terminal = terminal_max_T[:-2]
+    best_tag = np.argmax(eval_terminal, axis=0)
+    best_path_score = eval_terminal[best_tag]
+
+    best_path = [best_tag]
+    for btpoint in reversed(back_trace_tags):
+        best_tag = btpoint[best_tag]
+        best_path.append(best_tag)
+    start = best_path.pop()
+    assert start == start_id
+    best_path.reverse()
+    return best_path_score, best_path
 
 
 class classifier(Decoder):
