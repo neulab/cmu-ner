@@ -43,6 +43,7 @@ class CRF_Model(object):
         tag_scores, transit_score = self.crf_decoder.get_crf_scores(birnn_outputs)
         return tag_scores, transit_score
 
+
 class vanilla_NER_CRF_model(CRF_Model):
     ''' Implement End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. '''
     def __init__(self, args, data_loader):
