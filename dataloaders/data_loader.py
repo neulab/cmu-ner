@@ -35,7 +35,7 @@ class NER_DataLoader():
 
         if self.use_brown_cluster:
             self.brown_cluster_dicts = get_brown_cluster(args.brown_cluster_path)
-            self.brown_cluster_dicts['<unk>'] = len(self.brown_cluster_dicts)
+            self.brown_cluster_dicts['<unk>'] = 499
         else:
             self.brown_cluster_dicts = None
 
@@ -54,7 +54,7 @@ class NER_DataLoader():
             else:
                 paths_to_read = [self.train_path]
                 setEpaths = [self.dev_path, self.test_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read,setEpaths)
+                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read, setEpaths)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
