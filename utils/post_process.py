@@ -249,14 +249,17 @@ def post_processing(path_darpa_prediction,
         print("Total %d labels get propagated within document for gold setE!" % (tot_prop_label, ))
 
         # (b) Cross document propagation
-        most_freq_num = 5
+        most_freq_num = 20
         freq_ngram_list = sorted(ngram_freq, key=ngram_freq.get)[-most_freq_num:]
+        for w in freq_ngram_list:
+            print w
         vote_tag = defaultdict(lambda: defaultdict(lambda :0))
         for doc_id, span_infos in predicted_doc.iteritems():
             for span_info, tag in span_infos.iteritems():
                 span = span_info[0]
                 if span in freq_ngram_list:
                     vote_tag[span][tag] += 1
+                    print span
         vote_out_ents = dict()
         for span, other in vote_tag.iteritems():
             max_tag = ""
@@ -266,7 +269,7 @@ def post_processing(path_darpa_prediction,
                     max_tag = tag
                     max_vote = vote
             vote_out_ents[span] = max_tag
-
+        print "voted entities:", vote_out_ents
         add_label = 0
         for doc_id, unpredict_span_list in unpredicted_spans.iteritems():
             for unpredict_span in unpredict_span_list:
@@ -291,7 +294,7 @@ def post_processing(path_darpa_prediction,
 if __name__ == "__main__":
     author_list = "../eval/oromo/set0E_author.txt"
     author_list = "./debug/set012E_author.txt"
-    setE_conll = "../new_datasets/setE/tig/setE.conll"
+    setE_conll = "../new_datasets/setE/oromo/setE.conll"
     pred = "./debug/pred.conll"
     # pred = "./post_test.txt"
     # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
