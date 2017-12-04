@@ -268,16 +268,18 @@ def post_processing(path_darpa_prediction,
             vote_out_ents[span] = max_tag
 
         add_label = 0
-        for doc_id, unpredict_span in unpredicted_spans.iteritems():
-            start, end = unpredict_span[1], unpredict_span[2]
-            uspan = unpredict_span[0]
-            if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
-                if (doc_id, s2, e2) in gold_spans:
-                    add_label += 1
-                annot_id[doc_id] += 1
-                prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], start, end, vote_out_ents[uspan]))
-                predicted_spans[doc_id].append((start, end))
-                unpredicted_spans[doc_id].remove(unpredict_span)
+        for doc_id, unpredict_span_list in unpredicted_spans.iteritems():
+            for unpredict_span in unpredict_span_list:
+                start, end = unpredict_span[1], unpredict_span[2]
+                uspan = unpredict_span[0]
+                if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
+                    if (doc_id, s2, e2) in gold_spans:
+                        add_label += 1
+                    annot_id[doc_id] += 1
+                    prediction_list.append(
+                        make_darpa_format(uspan, doc_id, annot_id[doc_id], start, end, vote_out_ents[uspan]))
+                    predicted_spans[doc_id].append((start, end))
+                    unpredicted_spans[doc_id].remove(unpredict_span)
         print("Total %d labels get propagated across document for gold setE!" % (add_label, ))
 
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
@@ -294,6 +296,7 @@ if __name__ == "__main__":
     # pred = "./post_test.txt"
     # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
     output_file = "post_test.txt"
-    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True)
+    gold_file_path = "../ner_score/orm_setE_edl.tac"
+    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True, gold_file_path=gold_file_path)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
