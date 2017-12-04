@@ -674,7 +674,7 @@ if __name__ == "__main__":
         # set dynet seed manually
         ens_no = args.model_name.split("_")[1]
         dyparams = dy.DynetParams()
-        dyparams.set_random_seed(ens_no + args.dynet-seed)
+        dyparams.set_random_seed(ens_no + 5783287)
         args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
