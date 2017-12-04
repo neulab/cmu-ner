@@ -258,7 +258,7 @@ def main(args):
                         os.system("cp %s %s" % (final_darpa_output_fname, best_output_fname))
                 else:
                     bad_counter += 1
-                    if args.lr_decay and bad_counter >= 5:
+                    if args.lr_decay and bad_counter >= 5 and os.path.exists(args.save_to_path):
                         # TODO: Halve the learning rate
                         bad_counter = 0
                         model.load()
@@ -586,6 +586,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--lang", default="english", help="the target language")
+    parser.add_argument("--train_ensemble", default=False, action="store_true")
     parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
     # parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
@@ -663,10 +664,18 @@ if __name__ == "__main__":
     # Use trained model to test
     parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "emsemble"],
                         help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
-    parser.add_argument("emsemble_model_paths", type=str, help="each line in this file is the path to one model")
+    parser.add_argument("--emsemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
+
+    if args.train_ensemble:
+        # model_name = ens_1_ + original
+        # set dynet seed manually
+        ens_no = args.model_name.split("_")[1]
+        dyparams = dy.DynetParams()
+        dyparams.set_random_seed(ens_no + 5783287)
+        args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
     args.gold_setE_path = args.gold_setE_path + args.lang + "_setE_edl.tac"

@@ -246,7 +246,40 @@ def post_processing(path_darpa_prediction,
                 tot_prop_label += add_label
                 print("Within Document Label Propagation: Add %d labels for Doc %s. " % (add_label, doc_id))
 
-    print("Total %d labels get propagated within document!" % (tot_prop_label, ))
+        print("Total %d labels get propagated within document for gold setE!" % (tot_prop_label, ))
+
+        # (b) Cross document propagation
+        most_freq_num = 5
+        freq_ngram_list = sorted(ngram_freq, key=ngram_freq.get)[-most_freq_num:]
+        vote_tag = defaultdict(lambda: defaultdict(lambda :0))
+        for doc_id, span_infos in predicted_doc.iteritems():
+            for span_info, tag in span_infos.iteritems():
+                span = span_info[0]
+                if span in freq_ngram_list:
+                    vote_tag[span][tag] += 1
+        vote_out_ents = dict()
+        for span, other in vote_tag.iteritems():
+            max_tag = ""
+            max_vote = 0
+            for tag, vote in other.iteritems():
+                if vote > max_vote:
+                    max_tag = tag
+                    max_vote = vote
+            vote_out_ents[span] = max_tag
+
+        add_label = 0
+        for doc_id, unpredict_span in unpredicted_spans.iteritems():
+            start, end = unpredict_span[1], unpredict_span[2]
+            uspan = unpredict_span[0]
+            if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
+                if (doc_id, s2, e2) in gold_spans:
+                    add_label += 1
+                annot_id[doc_id] += 1
+                prediction_list.append(make_darpa_format(uspan, doc_id, annot_id[doc_id], start, end, vote_out_ents[uspan]))
+                predicted_spans[doc_id].append((start, end))
+                unpredicted_spans[doc_id].remove(unpredict_span)
+        print("Total %d labels get propagated across document for gold setE!" % (add_label, ))
+
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
