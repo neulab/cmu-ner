@@ -577,7 +577,8 @@ def ensemble_test_single_model(args):
 
     post_process(args, final_darpa_output_fname)
 
-def init_config()
+
+def init_config():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
     parser.add_argument("--dynet-seed", default=5783287, type=int)
