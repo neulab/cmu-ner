@@ -1,11 +1,9 @@
 __author__ = 'chuntingzhou'
 import os
 import uuid
-
 from utils.Convert_to_darpa_xml import *
 # from dataloaders.dataloader_unicode import *
 from dataloaders.data_loader import *
-from models.model_builder import *
 from utils.Convert_Output_Darpa import *
 from utils.post_process import post_processing
 uid = uuid.uuid4().get_hex()[:6]
@@ -296,7 +294,7 @@ def post_process(args, pred_file):
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
-                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path)
+                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path, most_freq_num=args.freq_ngram)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -579,7 +577,7 @@ def ensemble_test_single_model(args):
 
     post_process(args, final_darpa_output_fname)
 
-if __name__ == "__main__":
+def init_config()
     parser = argparse.ArgumentParser()
     parser.add_argument("--dynet-mem", default=1000, type=int)
     parser.add_argument("--dynet-seed", default=5783287, type=int)
@@ -652,6 +650,7 @@ if __name__ == "__main__":
     parser.add_argument("--confidence_num", default=2, type=str)
     parser.add_argument("--author_file", default=None, type=str)
     parser.add_argument("--lookup_file", default=None, type=str)
+    parser.add_argument("--freq_ngram", default=20, type=int)
 
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--valid_on_full", default=False, action="store_true")
@@ -664,7 +663,7 @@ if __name__ == "__main__":
     # Use trained model to test
     parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "emsemble"],
                         help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
-    parser.add_argument("--emsemble_model_paths", type=str, help="each line in this file is the path to one model")
+    parser.add_argument("--ensemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
@@ -672,15 +671,28 @@ if __name__ == "__main__":
     if args.train_ensemble:
         # model_name = ens_1_ + original
         # set dynet seed manually
-        ens_no = args.model_name.split("_")[1]
-        dyparams = dy.DynetParams()
-        dyparams.set_random_seed(ens_no + 5783287)
+        ens_no = int(args.model_name.split("_")[1])
+        # dyparams = dy.DynetParams()
+        # dyparams.set_random_seed(ens_no + 5783287)
+        # dyparams.init()
+
+        import dynet_config
+        dynet_config.set(random_seed=ens_no + 5783287)
+        # if args.cuda:
+        #     dynet_config.set_gpu()
+
         args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
     args.gold_setE_path = args.gold_setE_path + args.lang + "_setE_edl.tac"
     print args
+    return args
 
+args = init_config()
+from models.model_builder import *
+
+if __name__ == "__main__":
+    # args = init_config()
     if args.mode == "train":
         args.load_from_path = args.save_to_path
         main(args)

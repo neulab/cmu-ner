@@ -87,7 +87,8 @@ def post_processing(path_darpa_prediction,
                     lookup_files=None,
                     label_propagate=True,
                     conf_num=0,
-                    gold_file_path=None):
+                    gold_file_path=None,
+                    most_freq_num=20):
     '''
 
     :param path_darpa_prediction: Final output
@@ -249,7 +250,6 @@ def post_processing(path_darpa_prediction,
         print("Total %d labels get propagated within document for gold setE!" % (tot_prop_label, ))
 
         # (b) Cross document propagation
-        most_freq_num = 20
         freq_ngram_list = sorted(ngram_freq, key=ngram_freq.get)[-most_freq_num:]
         for w in freq_ngram_list:
             print w
