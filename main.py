@@ -1,13 +1,4 @@
 __author__ = 'chuntingzhou'
-import os
-import uuid
-from utils.Convert_to_darpa_xml import *
-# from dataloaders.dataloader_unicode import *
-from dataloaders.data_loader import *
-from utils.Convert_Output_Darpa import *
-from utils.post_process import post_processing
-uid = uuid.uuid4().get_hex()[:6]
-
 
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
@@ -682,7 +673,7 @@ def init_config():
         # if args.cuda:
         #     dynet_config.set_gpu()
 
-        args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
+        # args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
 
     args.save_to_path = args.save_to_path + args.model_name + ".model"
     args.gold_setE_path = args.gold_setE_path + args.lang + "_setE_edl.tac"
@@ -691,6 +682,14 @@ def init_config():
 
 args = init_config()
 from models.model_builder import *
+import os
+import uuid
+from utils.Convert_to_darpa_xml import *
+# from dataloaders.dataloader_unicode import *
+from dataloaders.data_loader import *
+from utils.Convert_Output_Darpa import *
+from utils.post_process import post_processing
+uid = uuid.uuid4().get_hex()[:6]
 
 if __name__ == "__main__":
     # args = init_config()
