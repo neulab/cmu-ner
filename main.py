@@ -479,6 +479,8 @@ def test_single_model(args):
 
 
 def ensemble_test_single_model(args):
+    # Note: when train ensemble, provide both full_data_path and train_path
+    # when test ensemble, provide just the train_path as the full_data_path
     ner_data_loader = NER_DataLoader(args)
     # ugly: get discrete number features
     _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)

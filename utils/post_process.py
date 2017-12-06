@@ -259,7 +259,6 @@ def post_processing(path_darpa_prediction,
                 span = span_info[0]
                 if span in freq_ngram_list:
                     vote_tag[span][tag] += 1
-                    print span
         vote_out_ents = dict()
         for span, other in vote_tag.iteritems():
             max_tag = ""
