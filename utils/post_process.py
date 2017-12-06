@@ -12,10 +12,10 @@ def read_gold_file(gold_path):
             if len(line) == 0:
                 continue
 
-            line = line.decode('utf-8')
+            #line = line.decode('utf-8')
             tokens = line.split('\t')
 
-            doc_id = tokens[0]
+            doc_id = str(tokens[0])
             start = int(tokens[1])
             end = int(tokens[2])
             ner = tokens[5].split('/')[0]
@@ -88,7 +88,7 @@ def post_processing(path_darpa_prediction,
                     label_propagate=True,
                     conf_num=0,
                     gold_file_path=None,
-                    most_freq_num=20):
+                    most_freq_num=90):
     '''
 
     :param path_darpa_prediction: Final output
@@ -276,7 +276,7 @@ def post_processing(path_darpa_prediction,
                 start, end = unpredict_span[1], unpredict_span[2]
                 uspan = unpredict_span[0]
                 if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
-                    if (doc_id, s2, e2) in gold_spans:
+                    if (doc_id, start, end) in gold_spans:
                         add_label += 1
                     annot_id[doc_id] += 1
                     prediction_list.append(
