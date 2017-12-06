@@ -14,7 +14,10 @@ class NER_DataLoader():
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         ''' TODO: 1. normalizing all digits
                   2. Using full vocabulary from GloVe, when testing, lower case first'''
-        self.train_path = args.train_path
+        if args.train_ensemble:
+            self.train_path = args.full_data_path
+        else:
+            self.train_path = args.train_path
         self.test_path = args.test_path
         self.dev_path = args.dev_path
         self.args = args
