@@ -138,7 +138,9 @@ def evaluate_lr_splitHashtag(data_loader, path, model, model_name, score_file, s
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
 
     #Putting Hashtags back
-    os.system("python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2../eval/%s > ../eval/%s" % (args.lang, args.lang,final_darpa_output_fname, final_output_fname))
+    os.system(
+            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py ../eval/%s /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname,args.lang, args.lang, final_output_fname))
     os.system("bash %s ../eval/%s %s" % (score_file, final_output_fname, scoring_file))
 
     prec = 0
@@ -444,8 +446,8 @@ def test_with_two_models(args):
 
     if args.valid_using_split:
         os.system(
-            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2../eval/%s > ../eval/%s" % (
-            args.lang, args.lang, final_darpa_output_fname, final_darpa_output_fname))
+            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py ../eval/%s /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname,args.lang, args.lang, final_darpa_output_fname))
 
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
@@ -528,8 +530,8 @@ def test_single_model(args):
 
     if args.valid_using_split:
         os.system(
-            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2../eval/%s > ../eval/%s" % (
-            args.lang, args.lang, final_darpa_output_fname, final_darpa_output_fname))
+            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py ../eval/%s /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname,args.lang, args.lang, final_darpa_output_fname))
 
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
@@ -625,9 +627,9 @@ def ensemble_test_single_model(args):
 
     if args.valid_using_split:
         os.system(
-            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2../eval/%s > ../eval/%s" % (
-            args.lang, args.lang, final_darpa_output_fname, final_darpa_output_fname))
-        
+            "python /usr2/data/zsheikh/NER/aditi_hashtag_splitter/fix_char_offsets.py ../eval/%s /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname,args.lang, args.lang, final_darpa_output_fname))
+
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
