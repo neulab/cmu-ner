@@ -94,7 +94,7 @@ class CNN_Encoder(Encoder):
         Encoder.__init__(self)
         self.vocab_size = vocab_size # if 0, no lookup tables
         self.win_size = win_size
-        self.filter_size =filter_size
+        self.filter_size = filter_size
         self.emb_size = emb_size
         self.dropout_rate = dropout
         self.paddding_token = padding_token
