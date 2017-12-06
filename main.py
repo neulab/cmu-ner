@@ -489,25 +489,25 @@ def ensemble_test_single_model(args):
         for line in fin:
             paths.append(line.strip())
     models = []
-    if args.model_arc == "char_cnn":
-        print "Using Char CNN model!"
-        models.append(vanilla_NER_CRF_model(args, ner_data_loader))
-    elif args.model_arc == "char_birnn":
-        print "Using Char Birnn model!"
-        models.append(BiRNN_CRF_model(args, ner_data_loader))
-    elif args.model_arc == "char_birnn_cnn":
-        print "Using Char Birnn-CNN model!"
-        models.append(CNN_BiRNN_CRF_model(args, ner_data_loader))
-    elif args.model_arc == "sep":
-        print "Using seperate encoders for embedding and features (cnn and birnn char)!"
-        models.append(Sep_Encoder_CRF_model(args, ner_data_loader))
-    elif args.model_arc == "sep_cnn_only":
-        print "Using seperate encoders for embedding and features (cnn char)!"
-        models.append(Sep_CNN_Encoder_CRF_model(args, ner_data_loader))
-    else:
-        raise NotImplementedError
 
     for i, path in enumerate(paths):
+        if args.model_arc == "char_cnn":
+            print "Using Char CNN model!"
+            models.append(vanilla_NER_CRF_model(args, ner_data_loader))
+        elif args.model_arc == "char_birnn":
+            print "Using Char Birnn model!"
+            models.append(BiRNN_CRF_model(args, ner_data_loader))
+        elif args.model_arc == "char_birnn_cnn":
+            print "Using Char Birnn-CNN model!"
+            models.append(CNN_BiRNN_CRF_model(args, ner_data_loader))
+        elif args.model_arc == "sep":
+            print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+            models.append(Sep_Encoder_CRF_model(args, ner_data_loader))
+        elif args.model_arc == "sep_cnn_only":
+            print "Using seperate encoders for embedding and features (cnn char)!"
+            models.append(Sep_CNN_Encoder_CRF_model(args, ner_data_loader))
+        else:
+            raise NotImplementedError
         models[i].load(path)
 
     sents, char_sents, discrete_features, origin_sents, bc_feats = ner_data_loader.get_lr_test(

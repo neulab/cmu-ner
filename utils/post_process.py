@@ -275,7 +275,7 @@ def post_processing(path_darpa_prediction,
                 start, end = unpredict_span[1], unpredict_span[2]
                 uspan = unpredict_span[0]
                 if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
-                    if (doc_id, s2, e2) in gold_spans:
+                    if (doc_id, start, end) in gold_spans:
                         add_label += 1
                     annot_id[doc_id] += 1
                     prediction_list.append(
