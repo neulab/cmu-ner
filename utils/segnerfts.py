@@ -603,3 +603,8 @@ def extract_token_level(lang, seg):
 def extractIndicatorFeatures(lang, seg):
     fts = extract(lang, seg)
     return fts                                 
+
+if __name__ == "__main__":
+    seg = [u'\u121d\u12dd\u1263\u12d5', u'\u12a3\u12e8\u122d', u'-', u'\u12f6\u1265', u'\u12a3\u120d\u1266', u'\u12c8\u1325\u122a', u'\u12d3\u1208\u121d']
+    b = extract("tir", seg)
+    print(b)
