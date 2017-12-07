@@ -197,6 +197,10 @@ def post_processing(path_darpa_prediction,
 
     print("Total %d labels in the gold spans get fixed by the lookup tables!" % (add_labels,))
 
+    def _print(dic):
+        for k, v in dic.iteritems():
+            print k, v
+
     tot_prop_label = 0
     if label_propagate:
         # Label propagation
@@ -251,8 +255,8 @@ def post_processing(path_darpa_prediction,
 
         # (b) Cross document propagation
         freq_ngram_list = sorted(ngram_freq, key=ngram_freq.get)[-most_freq_num:]
-        for w in freq_ngram_list:
-            print w
+        # for w in freq_ngram_list:
+        #     print w
         vote_tag = defaultdict(lambda: defaultdict(lambda :0))
         for doc_id, span_infos in predicted_doc.iteritems():
             for span_info, tag in span_infos.iteritems():
@@ -260,30 +264,42 @@ def post_processing(path_darpa_prediction,
                 if span in freq_ngram_list:
                     vote_tag[span][tag] += 1
         vote_out_ents = dict()
+        vote_ent_freq = defaultdict(lambda: 0)
         for span, other in vote_tag.iteritems():
             max_tag = ""
             max_vote = 0
             for tag, vote in other.iteritems():
+                vote_ent_freq[span] += vote
                 if vote > max_vote:
                     max_tag = tag
                     max_vote = vote
             vote_out_ents[span] = max_tag
-        print "voted entities:", vote_out_ents
+        print vote_out_ents
+        # vote_out_ents["#VOATigrigna"] = "ORG"
+        # vote_out_ents.__delitem__(u"\u12ad\u120d\u120d")
+        print "voted entities:"
+        _print(vote_out_ents)
         add_label = 0
+        vote_ent_add_freq = defaultdict(lambda :0)
         for doc_id, unpredict_span_list in unpredicted_spans.iteritems():
             for unpredict_span in unpredict_span_list:
                 start, end = unpredict_span[1], unpredict_span[2]
                 uspan = unpredict_span[0]
                 if uspan in vote_out_ents and not _check_cross_annotations(predicted_spans[doc_id], start, end):
-                    if (doc_id, start, end) in gold_spans:
-                        add_label += 1
+                    # if (doc_id, start, end) in gold_spans:
+                    #     add_label += 1
+                    add_label += 1
+                    vote_ent_add_freq[uspan] += 1
                     annot_id[doc_id] += 1
                     prediction_list.append(
                         make_darpa_format(uspan, doc_id, annot_id[doc_id], start, end, vote_out_ents[uspan]))
                     predicted_spans[doc_id].append((start, end))
                     unpredicted_spans[doc_id].remove(unpredict_span)
         print("Total %d labels get propagated across document for gold setE!" % (add_label, ))
-
+        print "Before label prop:"
+        _print(vote_ent_freq)
+        print "Added in label prop:"
+        _print(vote_ent_add_freq)
     with codecs.open(output_file, "w", encoding='utf-8') as fout:
         for item in prediction_list:
             one_sent = "\t".join(item)
@@ -291,14 +307,20 @@ def post_processing(path_darpa_prediction,
 
 
 if __name__ == "__main__":
-    author_list = "../eval/oromo/set0E_author.txt"
     author_list = "./debug/set012E_author.txt"
-    setE_conll = "../new_datasets/setE/oromo/setE.conll"
+    setE_conll = "../new_datasets/setE/tig/setE.conll"
     pred = "./debug/pred.conll"
     # pred = "./post_test.txt"
     # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
-    output_file = "post_test.txt"
-    gold_file_path = "../ner_score/orm_setE_edl.tac"
-    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True, gold_file_path=gold_file_path)
+    output_file = "post_output.txt"
+    gold_file_path = "../ner_score/tir_setE_edl.tac"
+    post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True, gold_file_path=gold_file_path, conf_num=2, most_freq_num=50)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
+    import os
+
+    score_file = "../ner_score/score_tir.sh"
+    fout_name_before = "../debug/before_score.txt"
+    fout_name = "../debug/score.txt"
+    os.system("bash %s %s %s" % (score_file, output_file, fout_name))
+    os.system("bash %s %s %s" % (score_file, pred, fout_name_before))

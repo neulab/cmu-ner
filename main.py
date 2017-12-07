@@ -199,6 +199,8 @@ def main(args):
 
     lr_decay = args.decay_rate
 
+    decay_patience = 10
+    decay_num = 0
     valid_history = []
     best_results = [0.0, 0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
@@ -248,13 +250,15 @@ def main(args):
                 else:
                     bad_counter += 1
                     if args.lr_decay and bad_counter >= 5 and os.path.exists(args.save_to_path):
-                        # TODO: Halve the learning rate
                         bad_counter = 0
                         model.load()
-                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr / (1 + epoch * lr_decay)))
-                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr / (1 + epoch * lr_decay))
+                        inital_lr = inital_lr * 0.5
+                        decay_num += 1
+                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr))
+                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr)
 
-                if bad_counter > patience:
+                # if bad_counter > patience:
+                if decay_num > decay_patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     #Test on full SetE
