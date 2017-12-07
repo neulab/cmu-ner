@@ -5,7 +5,7 @@ from utils.features import *
 from utils.util import *
 
 from utils.orm_norm import orm_morph
-from utils import orm_morph
+#from utils import orm_morph
 
 
 class NER_DataLoader():
