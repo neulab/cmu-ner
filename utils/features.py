@@ -2,8 +2,11 @@ import utils.segnerfts as segnerfts
 import codecs
 
 
-def get_feature_w(lang, sent):
-    return segnerfts.extract(lang, sent)
+def get_feature_sent(lang, sent, args):
+    if args.use_gazatter:
+        return segnerfts.extract(lang, sent)
+    else:
+        return segnerfts.extract_type_token_level(lang, sent)
 
 
 def get_brown_cluster(path):

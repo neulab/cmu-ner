@@ -252,13 +252,17 @@ def main(args):
                     if args.lr_decay and bad_counter >= 5 and os.path.exists(args.save_to_path):
                         bad_counter = 0
                         model.load()
-                        inital_lr = inital_lr * 0.5
-                        decay_num += 1
-                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr))
-                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr)
 
-                # if bad_counter > patience:
-                if decay_num > decay_patience:
+                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr / (1 + epoch * lr_decay)))
+                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr / (1 + epoch * lr_decay))
+
+                        # inital_lr = inital_lr * 0.5
+                        # decay_num += 1
+                        # print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr))
+                        # trainer = dy.MomentumSGDTrainer(model.model, inital_lr)
+
+                if bad_counter > patience:
+                # if decay_num > decay_patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     #Test on full SetE
@@ -643,7 +647,6 @@ def init_config():
     parser.add_argument("--brown_cluster_num", default=500, type=int, action="store")
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--use_gazatter", default=False, action="store_true")
-    parser.add_argument("--gazatter_path", action="store", type=str)
 
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
@@ -677,7 +680,7 @@ def init_config():
         # dyparams.init()
 
         import dynet_config
-        dynet_config.set(random_seed=ens_no + 5783287)
+        dynet_config.set(random_seed=ens_no + 5783290)
         # if args.cuda:
         #     dynet_config.set_gpu()
 
