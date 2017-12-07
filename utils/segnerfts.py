@@ -44,7 +44,7 @@ def load_gaz(gaz_fn):
     return gaz
 
 
-gazetteer = load_gaz('gaz.csv')
+gazetteer = load_gaz('../utils/gaz.csv')
 
 
 def ex_b_gaz(segment, language=None, label=None):
