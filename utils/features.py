@@ -2,8 +2,8 @@ import utils.segnerfts as segnerfts
 import codecs
 
 
-def get_feature_w(lang, w):
-    return segnerfts.extractIndicatorFeatures(lang, w)
+def get_feature_w(lang, sent):
+    return segnerfts.extract(lang, sent)
 
 
 def get_brown_cluster(path):

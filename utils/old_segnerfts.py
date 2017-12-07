@@ -1,83 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+
 
 import regex as re
-import unicodecsv as csv
-import copy
-from functools import partial
-
-
-def find_ngrams(input_list, n):
-    return zip(*[input_list[i:] for i in range(n)])
-
-
-def get_variants(raw):
-    raw = raw.replace('; ', ';')
-    return [tuple(v.split()) for v in raw.split(';')]
-
-
-def load_gaz(gaz_fn):
-    template = {'GPE': [], 'LOC': [], 'ORG': [], 'PER': []}
-    gaz = {
-        'amh': copy.copy(template),
-        'eng': copy.copy(template),
-        'deu': copy.copy(template),
-        'orm': copy.copy(template),
-        'som': copy.copy(template),
-        'tir': copy.copy(template),
-        }
-    with open(gaz_fn, 'rb') as f:
-        reader = csv.reader(f, encoding='utf-8')
-        next(reader)
-        for fields in reader:
-            eng, lab, tir, tir_ipa, orm, orm_ipa, wik, id_, _ = fields
-            if not lab:
-                if len(eng.split()) == 1:
-                    lab = 'GPE'
-            if tir and lab:
-                for v in get_variants(tir):
-                    gaz['tir'][lab].append(v)
-            if orm and lab:
-                for v in get_variants(orm):
-                    gaz['orm'][lab].append(v)
-    return gaz
-
-
-gazetteer = load_gaz('gaz.csv')
-
-
-def ex_b_gaz(segment, language=None, label=None):
-    fts = list(map(lambda x: False, segment))
-    for entry in gazetteer[language][label]:
-        ngrams = find_ngrams(segment, len(entry))
-        for i, ngram in enumerate(ngrams):
-            if entry == ngram:
-                fts[i] = True
-    return fts
-
-
-def ex_i_gaz(segment, language=None, label=None):
-    fts = list(map(lambda x: False, segment))
-    for entry in gazetteer[language][label]:
-        ngrams = find_ngrams(segment, len(entry))
-        for i, ngram in enumerate(ngrams):
-            if entry == ngram:
-                for j in range(len(ngram) - 1):
-                    fts[i + j + 1] = True
-    return fts
-
-
-def ex_o_gaz(segment, language=None):
-    fts = list(map(lambda x: True, segment))
-    for label in gazetteer[language].keys():
-        for entry in gazetteer[language][label]:
-            ngrams = find_ngrams(segment, len(entry))
-            for i, ngram in enumerate(ngrams):
-                if entry == ngram:
-                    for j in range(len(ngram)):
-                        fts[i + j] = False
-    return fts
 
 
 LONG_TOKEN_THRESH = 8
@@ -123,7 +48,7 @@ def ex_contains_ethiopic(ws):
 
 
 ex_title = {
-    'eng': lambda ws: [w in {
+    'eng': lambda ws: [False] + [w in {
         'Mister',
         'Mr.',
         'Mr',
@@ -170,8 +95,8 @@ ex_title = {
         'Sheriff',
         'Principal',
         'Mayor',
-    } for w in ws],
-    'deu': lambda ws: [w in {
+    } for w in ws[:-1]],
+    'deu': lambda ws: [False] + [w in {
         'Herr',
         'Hr.',
         'Frau',
@@ -258,8 +183,8 @@ ex_title = {
         'Lt.',
         'Vorsitzender',
         'Vors.',
-    } for w in ws],
-    'amh': lambda ws: [w in {
+    } for w in ws[:-1]],
+    'amh': lambda ws: [False] + [w in {
         'አቶ',  # Mr.
         'ወይዘሮ',
         'ወይዘሪት',
@@ -297,18 +222,16 @@ ex_title = {
         'አምባሳደር',
         'አስተዳዳሪ',
         'ሪፖርተራችን',
-    } for w in ws],
-    'orm': lambda ws: [w.lower() in {
+    } for w in ws[:-1]],
+    'orm': lambda ws: [False] + [w.lower() in {
         'obbo',  # Mister
         'obboo',  # Mister
         'obo',  # Mister
         'abbaa',  # Father
-        'aba',  # Father
+        'aba',
         'ministeeraa',  # Minister
-        'durataa\'aa',  # President
-        'jeneraal',  # General
-    } for w in ws],
-    'tir': lambda ws: [w in {
+    } for w in ws[:-1]],
+    'tir': lambda ws: [False] + [w in {
         'ኣቶ',  # Mister_1
         'ጐይታይ',  # Mister_2
         'ሓላፊ',  # President_1
@@ -317,7 +240,7 @@ ex_title = {
         'ፕረሲደንት',  # President_4
         'ፕሬዝዳንት',  # President_5
         'ኣቦ',  # Father
-    } for w in ws],
+    } for w in ws[:-1]],
     'som': lambda ws: [w in {} for w in ws],
 }
 
@@ -655,30 +578,16 @@ extractors = [
     lambda lang: ex_head_gpe[lang],
     lambda lang: ex_prep_from[lang],
     lambda lang: ex_prep_in[lang],
-    lambda lang: partial(ex_b_gaz, language=lang, label='GPE'),
-    lambda lang: partial(ex_b_gaz, language=lang, label='LOC'),
-    lambda lang: partial(ex_b_gaz, language=lang, label='ORG'),
-    lambda lang: partial(ex_b_gaz, language=lang, label='PER'),
-    lambda lang: partial(ex_i_gaz, language=lang, label='GPE'),
-    lambda lang: partial(ex_i_gaz, language=lang, label='LOC'),
-    lambda lang: partial(ex_i_gaz, language=lang, label='ORG'),
-    lambda lang: partial(ex_i_gaz, language=lang, label='PER'),
-    lambda lang: partial(ex_o_gaz, language=lang),
 ]
 
 
 TYPE_START, TYPE_END = 0, 9
 TOKEN_START, TOKEN_END = 9, 15
-GAZ_START, GAZ_END = 15, 24
 
-
-def fake_extract(lang, seg):
-    fts = [ex(lang)(seg) for ex in extractors]
-    return fts
 
 def extract(lang, seg):
     fts = zip(*[ex(lang)(seg) for ex in extractors])
-    return [list(map(int, f)) for f in fts]
+    return [map(int, f) for f in fts]
 
 
 def extract_type_level(lang, seg):
@@ -691,13 +600,11 @@ def extract_token_level(lang, seg):
     return [v[TOKEN_START:TOKEN_END] for v in fts]
 
 
-def extract_gaz_features(lang, seg):
+def extractIndicatorFeatures(lang, seg):
     fts = extract(lang, seg)
-    return [v[GAZ_START:GAZ_END] for v in fts]
+    return fts                                 
 
 if __name__ == "__main__":
     seg = [u'\u121d\u12dd\u1263\u12d5', u'\u12a3\u12e8\u122d', u'-', u'\u12f6\u1265', u'\u12a3\u120d\u1266', u'\u12c8\u1325\u122a', u'\u12d3\u1208\u121d']
     b = extract("tir", seg)
     print(b)
-    # a = extract_gaz_features("tir", seg)
-    # print(a)
