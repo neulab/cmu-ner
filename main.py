@@ -724,6 +724,7 @@ def init_config():
     parser.add_argument("--label_prop", default=False, action="store_true")
     parser.add_argument("--confidence_num", default=2, type=str)
     parser.add_argument("--author_file", default=None, type=str)
+    parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--lookup_file", default=None, type=str)
     parser.add_argument("--freq_ngram", default=20, type=int)
 
