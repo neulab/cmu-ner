@@ -192,7 +192,9 @@ def test_on_full_setE(ner_data_loader, args):
         raise NotImplementedError
 
     model.load()
-    acc, precision, recall, f1= 0.0
+    precision=0
+    recall=0
+    f1= 0
     if args.valid_using_split:
         acc, precision, recall, f1 = evaluate_lr_splitHashtag(ner_data_loader, args.test_path, model,
                                                           "best_"+args.model_name, args.score_file, args.setEconll, args)
