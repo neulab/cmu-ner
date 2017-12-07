@@ -584,7 +584,7 @@ def init_config():
     parser.add_argument("--model_name", type=str, default=None)
     parser.add_argument("--lang", default="english", help="the target language")
     parser.add_argument("--train_ensemble", default=False, action="store_true")
-    parser.add_argument("--full_data_path", type=str, help="when train_ensemble is true, this one is the full data path from which to load vocabulary.")
+    parser.add_argument("--full_data_path", type=str, default=None, help="when train_ensemble is true, this one is the full data path from which to load vocabulary.")
     parser.add_argument("--train_path", default="../datasets/english/eng.train.bio.conll", type=str)
     # parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
@@ -683,6 +683,8 @@ def init_config():
 
         # args.train_path = args.train_path.split(".")[0] + "_" + str(ens_no) + ".conll"
 
+    if args.full_data_path is None:
+        args.full_data_path = args.train_path
     args.save_to_path = args.save_to_path + args.model_name + ".model"
     args.gold_setE_path = args.gold_setE_path + args.lang + "_setE_edl.tac"
     print args
