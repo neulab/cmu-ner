@@ -537,7 +537,7 @@ def ensemble_test_single_model(args):
             tag_scores.append(ts)
             transit_scores.append(trs)
 
-        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores)
+        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores, len(ner_data_loader.tag_to_id))
         predictions.append(best_path)
 
         i += 1
