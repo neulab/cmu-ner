@@ -170,6 +170,7 @@ class chain_CRF_decoder(Decoder):
 
 def ensemble_viterbi_decoding(l_tag_scores, l_transit_score, tag_size):
     back_trace_tags = []
+    tag_size = tag_size + 2
     start_id = tag_size - 2
     end_id = tag_size - 1
     max_tm1 = np.ones(tag_size) * -100.0
