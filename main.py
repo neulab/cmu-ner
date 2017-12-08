@@ -533,7 +533,7 @@ def ensemble_test_single_model(args):
         tag_scores = []
         transit_scores = []
         for model in models:
-            ts, trs = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
+            trs, ts = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
             tag_scores.append(ts)
             transit_scores.append(trs)
 
