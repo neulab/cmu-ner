@@ -4,8 +4,8 @@ import os
 from utils.features import *
 from utils.util import *
 
-from utils.orm_norm import orm_morph
-#from utils import orm_morph
+# from utils.orm_norm import orm_morph
+from utils import orm_morph
 
 
 class NER_DataLoader():
@@ -87,7 +87,6 @@ class NER_DataLoader():
         self.char_vocab_size = len(self.id_to_char)
 
         print "Size of vocab after: ", len(self.word_to_id)
-        print("Number of discrete features: ", self.num_feats)
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
 
     @staticmethod

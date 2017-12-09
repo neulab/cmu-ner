@@ -159,7 +159,7 @@ def main(args):
 
     print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
-
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
 
@@ -351,6 +351,7 @@ def test_with_two_models(args):
     sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = combine_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -436,6 +437,7 @@ def test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -522,6 +524,7 @@ def ensemble_test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
