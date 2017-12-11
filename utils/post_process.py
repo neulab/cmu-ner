@@ -275,8 +275,8 @@ def post_processing(path_darpa_prediction,
                     max_vote = vote
             vote_out_ents[span] = max_tag
         print vote_out_ents
-        # vote_out_ents["#VOATigrigna"] = "ORG"
-        # vote_out_ents.__delitem__(u"\u12ad\u120d\u120d")
+        vote_out_ents["#VOATigrigna"] = "ORG"
+        vote_out_ents.__delitem__(u"\u12ad\u120d\u120d")
         print "voted entities:"
         _print(vote_out_ents)
         add_label = 0
@@ -308,8 +308,11 @@ def post_processing(path_darpa_prediction,
 
 if __name__ == "__main__":
     author_list = "./debug/set012E_author.txt"
-    setE_conll = "../new_datasets/setE/tig/setE.conll"
+    author_list = "/home/chuntinz/LORELEI_NER/datasets/post_data/tig/set012E_author.txt"
+
+    setE_conll = "../datasets/setE/tig/setE.conll"
     pred = "./debug/pred.conll"
+    pred = "../eval/ensemble3_59df10_darpa_output.conll"
     # pred = "./post_test.txt"
     # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
     output_file = "post_output.txt"
@@ -320,7 +323,8 @@ if __name__ == "__main__":
     import os
 
     score_file = "../ner_score/score_tir.sh"
-    fout_name_before = "../debug/before_score.txt"
-    fout_name = "../debug/score.txt"
+    fout_name_before = "./before_score.txt"
+    fout_name = "./score.txt"
     os.system("bash %s %s %s" % (score_file, output_file, fout_name))
     os.system("bash %s %s %s" % (score_file, pred, fout_name_before))
+    print open(fout_name).read()
