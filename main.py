@@ -670,8 +670,9 @@ def init_config():
 
     parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
-    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble"],
-                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble", "pred_ensemble",],
+                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo; "
+                             "ensemble: CRF ensemble; pred_ensemble: ensemble prediction results")
     parser.add_argument("--ensemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 

@@ -413,6 +413,7 @@ def post_processing(path_darpa_prediction,
                     print("Converted %d lines to conll!" % lines)
         assert num_preded >= len(prediction_dict)
 
+# based on ngram frequency
 if __name__ == "__main__":
     author_list = "./debug/set012E_author.txt"
     setE_conll = "../new_datasets/setE/tig/setE.conll"
@@ -424,7 +425,7 @@ if __name__ == "__main__":
     f_conll_out = "post_output_67.conll"
 
     post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True,
-                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=50, fout_conll_name=f_conll_out)
+                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=100, fout_conll_name=f_conll_out)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
     import os

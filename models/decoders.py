@@ -3,7 +3,7 @@ from utils.util import *
 
 
 class Decoder():
-    def __init__(self):
+    def __init__(self, tag_size):
         # type: () -> object
         pass
 
@@ -14,17 +14,28 @@ class Decoder():
         raise NotImplementedError
 
 
+def constrained_transition_init(transition_matrix, contraints):
+    '''
+    :param transition_matrix: numpy array, (to, from)
+    :param contraints: [[from_indexes], [to_indexes]]
+    :return: newly initialized transition matrix
+    '''
+    for cons in contraints:
+        transition_matrix[cons[1], cons[0]] = -1000.0
+    return transition_matrix
+
+
 class chain_CRF_decoder(Decoder):
     ''' For NER and POS Tagging. '''
 
-    def __init__(self, model, src_output_dim, tag_emb_dim, tag_size):
-        Decoder.__init__(self)
+    def __init__(self, model, src_output_dim, tag_emb_dim, tag_size, constraints=None):
+        Decoder.__init__(self, tag_size)
         self.model = model
-
         self.start_id = tag_size
         self.end_id = tag_size + 1
         self.tag_size = tag_size + 2
         tag_size = tag_size + 2
+
         # optional: transform the hidden space of src encodings into the tag embedding space
         self.W_src2tag_readout = model.add_parameters((tag_emb_dim, src_output_dim))
         self.b_src2tag_readout = model.add_parameters((tag_emb_dim))
@@ -36,8 +47,11 @@ class chain_CRF_decoder(Decoder):
 
         # (to, from), trans[i] is the transition score to i
         init_transition_matrix = np.random.randn(tag_size, tag_size)
-        # init_transition_matrix[self.start_id, :] = -100.0
-        # init_transition_matrix[:, self.end_id] = -100.0
+        init_transition_matrix[self.start_id, :] = -1000.0
+        init_transition_matrix[:, self.end_id] = -1000.0
+        if constraints is not None:
+            init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
+
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
                                                              init=dy.NumpyInitializer(init_transition_matrix))
 
@@ -163,44 +177,6 @@ class chain_CRF_decoder(Decoder):
         assert start == self.start_id
         best_path.reverse()
         return best_path_score, best_path
-
-    # def decoding_with_constraints(self, src_encodings):
-    #     back_trace_tags = []
-    #     tag_size = tag_size + 2
-    #     start_id = tag_size - 2
-    #     end_id = tag_size - 1
-    #     max_tm1 = np.ones(tag_size) * -100.0
-    #     max_tm1[start_id] = 0.0
-    #
-    #     tag_scores = []
-    #     for i in range(len(l_tag_scores[0])):
-    #         tag_scores.append(sum([ts[i] for ts in l_tag_scores]) / len(l_tag_scores))
-    #     transpose_transition_score = sum(l_transit_score) / len(l_transit_score)  # (from, to)
-    #
-    #     for i, tag_score in enumerate(tag_scores):
-    #         max_tm1 = np.tile(np.expand_dims(max_tm1, axis=1), (1, tag_size))
-    #         max_t = max_tm1 + transpose_transition_score
-    #         if i != 0:
-    #             eval_score = max_t[:-2, :]
-    #         else:
-    #             eval_score = max_t
-    #         best_tag = np.argmax(eval_score, axis=0)
-    #         back_trace_tags.append(best_tag)
-    #         max_tm1 = eval_score[best_tag, range(tag_size)] + tag_score
-    #
-    #     terminal_max_T = max_tm1 + transpose_transition_score[:, end_id]
-    #     eval_terminal = terminal_max_T[:-2]
-    #     best_tag = np.argmax(eval_terminal, axis=0)
-    #     best_path_score = eval_terminal[best_tag]
-    #
-    #     best_path = [best_tag]
-    #     for btpoint in reversed(back_trace_tags):
-    #         best_tag = btpoint[best_tag]
-    #         best_path.append(best_tag)
-    #     start = best_path.pop()
-    #     assert start == start_id
-    #     best_path.reverse()
-    #     return best_path_score, best_path
 
     def cal_accuracy(self, pred_path, true_path):
         return np.sum(np.equal(pred_path, true_path).astype(np.float32)) / len(pred_path)
