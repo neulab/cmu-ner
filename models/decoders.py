@@ -21,7 +21,7 @@ def constrained_transition_init(transition_matrix, contraints):
     :return: newly initialized transition matrix
     '''
     for cons in contraints:
-        transition_matrix[cons[1], cons[0]] = -1000.0
+        transition_matrix[cons[0], cons[1]] = -1000.0
     return transition_matrix
 
 
@@ -47,8 +47,8 @@ class chain_CRF_decoder(Decoder):
 
         # (to, from), trans[i] is the transition score to i
         init_transition_matrix = np.random.randn(tag_size, tag_size)
-        init_transition_matrix[self.start_id, :] = -1000.0
-        init_transition_matrix[:, self.end_id] = -1000.0
+        init_transition_matrix[:, self.start_id] = -1000.0
+        init_transition_matrix[self.end_id, :] = -1000.0
         if constraints is not None:
             init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
 
