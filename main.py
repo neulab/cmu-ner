@@ -1,5 +1,6 @@
 __author__ = 'chuntingzhou'
 
+
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
@@ -289,11 +290,13 @@ def main(args):
 
 def post_process(args, pred_file):
     fout_name = "../eval/post_" + pred_file.split('/')[-1]
+    fout_conll_name = "../eval/post_conll_" + pred_file.split('/')[-1]
     post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
-                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path, most_freq_num=args.freq_ngram)
+                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path,
+                    most_freq_num=args.freq_ngram, fout_conll_name=fout_conll_name)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -667,8 +670,9 @@ def init_config():
 
     parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
-    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble"],
-                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble", "pred_ensemble",],
+                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo; "
+                             "ensemble: CRF ensemble; pred_ensemble: ensemble prediction results")
     parser.add_argument("--ensemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 

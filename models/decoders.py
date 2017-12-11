@@ -3,7 +3,7 @@ from utils.util import *
 
 
 class Decoder():
-    def __init__(self):
+    def __init__(self, tag_size):
         # type: () -> object
         pass
 
@@ -14,17 +14,28 @@ class Decoder():
         raise NotImplementedError
 
 
+def constrained_transition_init(transition_matrix, contraints):
+    '''
+    :param transition_matrix: numpy array, (to, from)
+    :param contraints: [[from_indexes], [to_indexes]]
+    :return: newly initialized transition matrix
+    '''
+    for cons in contraints:
+        transition_matrix[cons[1], cons[0]] = -1000.0
+    return transition_matrix
+
+
 class chain_CRF_decoder(Decoder):
     ''' For NER and POS Tagging. '''
 
-    def __init__(self, model, src_output_dim, tag_emb_dim, tag_size):
-        Decoder.__init__(self)
+    def __init__(self, model, src_output_dim, tag_emb_dim, tag_size, constraints=None):
+        Decoder.__init__(self, tag_size)
         self.model = model
-
         self.start_id = tag_size
         self.end_id = tag_size + 1
         self.tag_size = tag_size + 2
         tag_size = tag_size + 2
+
         # optional: transform the hidden space of src encodings into the tag embedding space
         self.W_src2tag_readout = model.add_parameters((tag_emb_dim, src_output_dim))
         self.b_src2tag_readout = model.add_parameters((tag_emb_dim))
@@ -36,8 +47,11 @@ class chain_CRF_decoder(Decoder):
 
         # (to, from), trans[i] is the transition score to i
         init_transition_matrix = np.random.randn(tag_size, tag_size)
-        # init_transition_matrix[self.start_id, :] = -100.0
-        # init_transition_matrix[:, self.end_id] = -100.0
+        init_transition_matrix[self.start_id, :] = -1000.0
+        init_transition_matrix[:, self.end_id] = -1000.0
+        if constraints is not None:
+            init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
+
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
                                                              init=dy.NumpyInitializer(init_transition_matrix))
 
