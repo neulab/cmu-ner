@@ -423,11 +423,6 @@ if __name__ == "__main__":
     gold_file_path = "../ner_score/tir_setE_edl.tac"
     f_conll_out = "post_output_67.conll"
 
-    pred = "./post_output_68.4.txt"
-    output_file = "post_output_second_68.4.txt"
-    gold_file_path = "../ner_score/tir_setE_edl.tac"
-    f_conll_out = "post_output_68.4_second.conll"
-
     post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True,
                     gold_file_path=gold_file_path, conf_num=2, most_freq_num=50, fout_conll_name=f_conll_out)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
