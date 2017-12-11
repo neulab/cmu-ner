@@ -1,5 +1,6 @@
 __author__ = 'chuntingzhou'
 
+
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
@@ -219,7 +220,7 @@ def main(args):
 
     print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
-
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
 
@@ -312,13 +313,17 @@ def main(args):
                     if args.lr_decay and bad_counter >= 5 and os.path.exists(args.save_to_path):
                         bad_counter = 0
                         model.load()
-                        inital_lr = inital_lr * 0.5
-                        decay_num += 1
-                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr))
-                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr)
 
-                # if bad_counter > patience:
-                if decay_num > decay_patience:
+                        print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr / (1 + epoch * lr_decay)))
+                        trainer = dy.MomentumSGDTrainer(model.model, inital_lr / (1 + epoch * lr_decay))
+
+                        # inital_lr = inital_lr * 0.5
+                        # decay_num += 1
+                        # print("Epoch = %d, Learning Rate = %f." % (epoch, inital_lr))
+                        # trainer = dy.MomentumSGDTrainer(model.model, inital_lr)
+
+                if bad_counter > patience:
+                # if decay_num > decay_patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     #Test on full SetE
@@ -345,11 +350,13 @@ def main(args):
 
 def post_process(args, pred_file):
     fout_name = "../eval/post_" + pred_file.split('/')[-1]
+    fout_conll_name = "../eval/post_conll_" + pred_file.split('/')[-1]
     post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
-                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path, most_freq_num=args.freq_ngram)
+                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path,
+                    most_freq_num=args.freq_ngram, fout_conll_name=fout_conll_name)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -407,6 +414,7 @@ def test_with_two_models(args):
     sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = combine_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -497,6 +505,7 @@ def test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -588,6 +597,7 @@ def ensemble_test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -599,11 +609,11 @@ def ensemble_test_single_model(args):
         tag_scores = []
         transit_scores = []
         for model in models:
-            ts, trs = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
+            trs, ts = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
             tag_scores.append(ts)
             transit_scores.append(trs)
 
-        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores)
+        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores, len(ner_data_loader.tag_to_id))
         predictions.append(best_path)
 
         i += 1
@@ -718,7 +728,6 @@ def init_config():
     parser.add_argument("--brown_cluster_num", default=500, type=int, action="store")
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--use_gazatter", default=False, action="store_true")
-    parser.add_argument("--gazatter_path", action="store", type=str)
 
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
@@ -753,7 +762,7 @@ def init_config():
         # dyparams.init()
 
         import dynet_config
-        dynet_config.set(random_seed=ens_no + 5783287)
+        dynet_config.set(random_seed=ens_no + 5783290)
         # if args.cuda:
         #     dynet_config.set_gpu()
 

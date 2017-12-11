@@ -44,7 +44,7 @@ def load_gaz(gaz_fn):
     return gaz
 
 
-gazetteer = load_gaz('../utils/gaz.csv')
+gazetteer = load_gaz('gaz.csv')
 
 
 def ex_b_gaz(segment, language=None, label=None):
@@ -676,7 +676,6 @@ def fake_extract(lang, seg):
     fts = [ex(lang)(seg) for ex in extractors]
     return fts
 
-
 def extract(lang, seg):
     fts = zip(*[ex(lang)(seg) for ex in extractors])
     return [list(map(int, f)) for f in fts]
@@ -695,15 +694,3 @@ def extract_token_level(lang, seg):
 def extract_gaz_features(lang, seg):
     fts = extract(lang, seg)
     return [v[GAZ_START:GAZ_END] for v in fts]
-
-
-def extract_type_token_level(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TYPE_START:TOKEN_END] for v in fts]
-
-if __name__ == "__main__":
-    seg = [u'\u121d\u12dd\u1263\u12d5', u'\u12a3\u12e8\u122d', u'-', u'\u12f6\u1265', u'\u12a3\u120d\u1266', u'\u12c8\u1325\u122a', u'\u12d3\u1208\u121d']
-    b = extract("tir", seg)
-    print(b)
-    # a = extract_gaz_features("tir", seg)
-    # print(a)

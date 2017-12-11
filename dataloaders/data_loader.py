@@ -8,13 +8,13 @@ from utils.orm_norm import orm_morph
 from utils.orm_norm import ormnorm
 #from utils import orm_morph
 
-
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
         # This is data loader as well as feature extractor!!
         '''Data format: id word pos_tag syntactic_tag NER_tag'''
         ''' TODO: 1. normalizing all digits
                   2. Using full vocabulary from GloVe, when testing, lower case first'''
+        self.args = args
         if args.train_ensemble:
             self.train_path = args.full_data_path
         else:
@@ -237,7 +237,7 @@ class NER_DataLoader():
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
             bc_features.append(temp_bc)
-            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
 
             # print len(discrete_features[-1])
 
@@ -283,7 +283,7 @@ class NER_DataLoader():
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
-            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             bc_features.append(temp_bc)
 
         original_sents = []
@@ -338,7 +338,7 @@ class NER_DataLoader():
             sents.append(temp_sent)
             char_sents.append(temp_char)
             bc_features.append(temp_bc)
-            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             original_sents.append(temp_ori_sent)
             # print len(discrete_features[-1])
 
@@ -418,7 +418,7 @@ class Dataloader_Combine():
             sents.append(temp_sent)
             char_sents.append(temp_char)
             bc_features.append(temp_bc)
-            discrete_features.append(get_feature_w(lang, one_sent) if self.use_discrete_feature else [])
+            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             original_sents.append(temp_ori_sent)
             # print len(discrete_features[-1])
 
