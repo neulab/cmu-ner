@@ -16,7 +16,7 @@ class Decoder():
 
 def constrained_transition_init(transition_matrix, contraints):
     '''
-    :param transition_matrix: numpy array, (to, from)
+    :param transition_matrix: numpy array, (from, to)
     :param contraints: [[from_indexes], [to_indexes]]
     :return: newly initialized transition matrix
     '''
@@ -51,7 +51,7 @@ class chain_CRF_decoder(Decoder):
         init_transition_matrix[self.end_id, :] = -1000.0
         if constraints is not None:
             init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
-
+	print init_transition_matrix
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
                                                              init=dy.NumpyInitializer(init_transition_matrix))
 
