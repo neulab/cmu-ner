@@ -594,6 +594,7 @@ ex_head_gpe = {
         'ganda',
         'mootummaa',
         'motuma',
+        'biyya',  # Country
     } for w in ws],
     'tir': lambda ws: [w in {
         'ወረዳ',  # District
