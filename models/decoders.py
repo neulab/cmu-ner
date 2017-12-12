@@ -148,7 +148,7 @@ class chain_CRF_decoder(Decoder):
         tag_scores = [dy.affine_transform([b_score_tag, W_score_tag, tag_emb]) for tag_emb in tag_embs]
 
         back_trace_tags = []
-        np_init_alpha = np.ones(self.tag_size) * -100.0
+        np_init_alpha = np.ones(self.tag_size) * -2000.0
         np_init_alpha[self.start_id] = 0.0
         max_tm1 = dy.inputTensor(np_init_alpha)
         transpose_transition_score = dy.parameter(self.transition_matrix)  # (to, from)
@@ -187,7 +187,7 @@ def ensemble_viterbi_decoding(l_tag_scores, l_transit_score, tag_size):
     tag_size = tag_size + 2
     start_id = tag_size - 2
     end_id = tag_size - 1
-    max_tm1 = np.ones(tag_size) * -100.0
+    max_tm1 = np.ones(tag_size) * -2000.0
     max_tm1[start_id] = 0.0
 
     tag_scores = []
