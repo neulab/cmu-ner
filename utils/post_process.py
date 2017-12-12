@@ -441,9 +441,5 @@ if __name__ == "__main__":
     fout_name = "./score.txt"
     os.system("bash %s %s %s" % (score_file, output_file, fout_name))
     os.system("bash %s %s %s" % (score_file, pred, fout_name_before))
-<<<<<<< HEAD
+
     print open(fout_name).read()
-=======
-
-
->>>>>>> d313dda6a8788e9c4332b1584bad726379a7cb97

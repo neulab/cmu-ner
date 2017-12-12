@@ -158,7 +158,7 @@ def main(args):
         sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
         sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
 
-    print ner_data_loader.char_to_id
+    # print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
     print("Number of discrete features: ", ner_data_loader.num_feats)
     epoch = bad_counter = updates = tot_example = cum_loss = 0

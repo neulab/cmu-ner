@@ -19,6 +19,7 @@ DIGIT_RE = re.compile(br"\d")
 
 # word = utils.DIGIT_RE.sub(b"0", tokens[0]) if normalize_digits else tokens[0]
 
+
 def iob2(tags):
     """
     Check that tags have a valid IOB format.
