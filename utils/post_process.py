@@ -413,8 +413,15 @@ def post_processing(path_darpa_prediction,
                     print("Converted %d lines to conll!" % lines)
         assert num_preded >= len(prediction_dict)
 
+# based on ngram frequency
 if __name__ == "__main__":
     author_list = "./debug/set012E_author.txt"
+    author_list = "/home/chuntinz/LORELEI_NER/datasets/post_data/tig/set012E_author.txt"
+
+    setE_conll = "../datasets/setE/tig/setE.conll"
+    pred = "./debug/pred.conll"
+    pred = "../eval/ensemble3_59df10_darpa_output.conll"
+    # pred = "./post_test.txt"
     setE_conll = "../new_datasets/setE/tig/setE.conll"
     pred = "./debug/ensemble_67.conll"
 
@@ -424,15 +431,15 @@ if __name__ == "__main__":
     f_conll_out = "post_output_67.conll"
 
     post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True,
-                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=50, fout_conll_name=f_conll_out)
+                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=100, fout_conll_name=f_conll_out)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
     import os
 
     score_file = "../ner_score/score_tir.sh"
-    fout_name_before = "../debug/before_score.txt"
-    fout_name = "../debug/score.txt"
+    fout_name_before = "./before_score.txt"
+    fout_name = "./score.txt"
     os.system("bash %s %s %s" % (score_file, output_file, fout_name))
     os.system("bash %s %s %s" % (score_file, pred, fout_name_before))
 
-
+    print open(fout_name).read()

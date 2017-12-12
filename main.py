@@ -218,7 +218,7 @@ def main(args):
         sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
         sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
 
-    print ner_data_loader.char_to_id
+    # print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
     print("Number of discrete features: ", ner_data_loader.num_feats)
     epoch = bad_counter = updates = tot_example = cum_loss = 0
@@ -746,8 +746,9 @@ def init_config():
 
     parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
-    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble"],
-                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble", "pred_ensemble",],
+                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo; "
+                             "ensemble: CRF ensemble; pred_ensemble: ensemble prediction results")
     parser.add_argument("--ensemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 
