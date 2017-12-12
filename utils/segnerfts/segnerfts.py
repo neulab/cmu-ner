@@ -5,7 +5,12 @@ from __future__ import print_function
 import regex as re
 import unicodecsv as csv
 import copy
+import orm_morph
+import tir_morph
 from functools import partial
+
+
+BEST_PARSE = True
 
 
 def find_ngrams(input_list, n):
@@ -79,6 +84,39 @@ def ex_o_gaz(segment, language=None):
                         fts[i + j] = False
     return fts
 
+
+morph = {'orm': partial(orm_morph.parse, representation_name='gloss'),
+         'tir': partial(tir_morph.parse, channel='gloss'),
+         'amh': lambda x: [],
+         'eng': lambda x: [],
+         'deu': lambda x: [],
+         'som': lambda x: [],
+}
+
+
+GLOSS_DELIM = re.compile('[-.]')
+
+
+def segment_gloss(gloss):
+    return set(GLOSS_DELIM.split(gloss))
+
+
+def ex_morph(segment, language=None, ft=set([])):
+    fts = []
+    for token in segment:
+        glosses = morph[language](token)
+        if not glosses:
+            fts.append(False)
+        else:
+            if BEST_PARSE:
+                glosses = glosses[:1]
+            glosses = map(segment_gloss, glosses)
+            glosses = set([x for sublist in glosses for x in sublist])
+            fts.append(bool(glosses & ft))
+    return fts
+            
+
+        
 
 LONG_TOKEN_THRESH = 8
 
@@ -594,6 +632,7 @@ ex_head_gpe = {
         'ganda',
         'mootummaa',
         'motuma',
+        'biyya',  # Country
     } for w in ws],
     'tir': lambda ws: [w in {
         'ወረዳ',  # District
@@ -664,13 +703,36 @@ extractors = [
     lambda lang: partial(ex_i_gaz, language=lang, label='ORG'),
     lambda lang: partial(ex_i_gaz, language=lang, label='PER'),
     lambda lang: partial(ex_o_gaz, language=lang),
+    lambda lang: partial(ex_morph, language=lang, ft={'1SG', '1PL', 
+                                                      '2SG', '2PL', 
+                                                      '3SG', '3PL',
+                                                      'PL'}),  # Person-number
+    lambda lang: partial(ex_morph, language=lang, ft={'OBJ'}),  # Object (proclitic)
+    lambda lang: partial(ex_morph, language=lang, ft={'POSS'}),  # Possessive (proclitic)
+    lambda lang: partial(ex_morph, language=lang, ft={'OBL'}),  # Oblique (proclitic)
+    lambda lang: partial(ex_morph, language=lang, ft={'FEM', 'MASC', 
+                                                      'F', 'M'}),  # Gender
+    lambda lang: partial(ex_morph, language=lang, ft={'PL'}),  # Plural
+    lambda lang: partial(ex_morph, language=lang, ft={'DEF'}),  # Definite
+    lambda lang: partial(ex_morph, language=lang, ft={'NOM'}),  # Nominative
+    lambda lang: partial(ex_morph, language=lang, ft={'GEN'}),  # Genitive
+    lambda lang: partial(ex_morph, language=lang, ft={'DAT'}),  # Dative
+    lambda lang: partial(ex_morph, language=lang, ft={'INST'}),  # Instrumental
+    lambda lang: partial(ex_morph, language=lang, ft={'ABL'}),  # Ablative
+    lambda lang: partial(ex_morph, language=lang, ft={'AND', 'CONJ'}),  # Conjunction
+    lambda lang: partial(ex_morph, language=lang, ft={'PST', 'PRS', 
+                                                      'PAST', 'PRES'}),  # Tense
+    lambda lang: partial(ex_morph, language=lang, ft={'AFF', 'NEG'}),  # Polarity
+    lambda lang: partial(ex_morph, language=lang, ft={'JUSS'}),  # Modality
+    lambda lang: partial(ex_morph, language=lang, ft={'INF'}),  # Form
+    lambda lang: partial(ex_morph, language=lang, ft={'ADJ'}),  # Adjectival
 ]
 
 
 TYPE_START, TYPE_END = 0, 9
 TOKEN_START, TOKEN_END = 9, 15
 GAZ_START, GAZ_END = 15, 24
-
+MORPH_START, MORPH_END = 24, 47
 
 def fake_extract(lang, seg):
     fts = [ex(lang)(seg) for ex in extractors]
@@ -694,3 +756,8 @@ def extract_token_level(lang, seg):
 def extract_gaz_features(lang, seg):
     fts = extract(lang, seg)
     return [v[GAZ_START:GAZ_END] for v in fts]
+
+
+def extract_morph_features(lang, seg):
+    fts = extract(lang, seg)
+    return [v[MORPH_START:MORPH_END] for v in fts]
