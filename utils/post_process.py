@@ -443,4 +443,3 @@ if __name__ == "__main__":
     os.system("bash %s %s %s" % (score_file, pred, fout_name_before))
     print open(fout_name).read()
 
-

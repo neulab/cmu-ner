@@ -10,15 +10,17 @@ class CRF_Model(object):
         self.save_to = args.save_to_path
         self.load_from = args.load_from_path
         tag_to_id = data_loader.tag_to_id
-        self.constraints = [[tag_to_id["B-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]],
-                            [tag_to_id["B-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]],
-                            [tag_to_id["B-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]],
-                            [tag_to_id["B-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]],
-                            [tag_to_id["O"]] * 4, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"], tag_to_id["I-GPE"]],
-                            [tag_to_id["I-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]],
-                            [tag_to_id["I-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]],
-                            [tag_to_id["I-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]],
-                            [tag_to_id["I-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]]
+        self.constraints = [[[tag_to_id["B-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]],
+                            [[tag_to_id["O"]] * 4, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"], tag_to_id["I-GPE"]]],
+                            [[tag_to_id["I-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]]]
+
+        # print self.constraints
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
