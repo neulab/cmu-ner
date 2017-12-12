@@ -1,5 +1,6 @@
 __author__ = 'chuntingzhou'
 
+
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
@@ -157,9 +158,9 @@ def main(args):
         sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
         sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
 
-    print ner_data_loader.char_to_id
+    # print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
-
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
 
@@ -289,11 +290,13 @@ def main(args):
 
 def post_process(args, pred_file):
     fout_name = "../eval/post_" + pred_file.split('/')[-1]
+    fout_conll_name = "../eval/post_conll_" + pred_file.split('/')[-1]
     post_score_file = "../eval/post_%s_score_file" % (args.model_name + "_" + str(uid))
     # Currently only support one lookup file
     lookup_file = None if args.lookup_file is None else {"Gen": args.lookup_file}
     post_processing(pred_file, args.setEconll, args.author_file, fout_name, lookup_files=lookup_file,
-                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path, most_freq_num=args.freq_ngram)
+                    label_propagate=args.label_prop, conf_num=args.confidence_num, gold_file_path=args.gold_setE_path,
+                    most_freq_num=args.freq_ngram, fout_conll_name=fout_conll_name)
     print("Score on the post processed file: ")
     os.system("bash %s ../eval/%s %s" % (args.score_file, fout_name, post_score_file))
     with codecs.open(post_score_file, 'r') as fileout:
@@ -351,6 +354,7 @@ def test_with_two_models(args):
     sents, char_sents, discrete_features, bc_feats, origin_sents, doc_ids = combine_data_loader.get_lr_test_setE(args.setEconll, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -436,6 +440,7 @@ def test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -522,6 +527,7 @@ def ensemble_test_single_model(args):
         args.test_path, args.lang)
 
     print "Evaluation data size: ", len(sents)
+    print("Number of discrete features: ", ner_data_loader.num_feats)
     prefix = args.model_name + "_" + str(uid)
     predictions = []
     i = 0
@@ -533,11 +539,11 @@ def ensemble_test_single_model(args):
         tag_scores = []
         transit_scores = []
         for model in models:
-            ts, trs = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
+            trs, ts = model.eval_scores(sent, char_sent, discrete_feature, bc_feat, training=False)
             tag_scores.append(ts)
             transit_scores.append(trs)
 
-        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores)
+        best_score, best_path = ensemble_viterbi_decoding(tag_scores, transit_scores, len(ner_data_loader.tag_to_id))
         predictions.append(best_path)
 
         i += 1
@@ -664,8 +670,9 @@ def init_config():
 
     parser.add_argument("--gold_setE_path", type=str, default="../ner_score/")
     # Use trained model to test
-    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble"],
-                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo")
+    parser.add_argument("--mode", default="train", type=str, choices=["train", "test_2", "test_1", "ensemble", "pred_ensemble",],
+                        help="test_1: use one model; test_2: use lower case model and normal model to test oromo; "
+                             "ensemble: CRF ensemble; pred_ensemble: ensemble prediction results")
     parser.add_argument("--ensemble_model_paths", type=str, help="each line in this file is the path to one model")
     args = parser.parse_args()
 

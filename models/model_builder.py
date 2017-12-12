@@ -6,9 +6,21 @@ np.set_printoptions(threshold='nan')
 
 
 class CRF_Model(object):
-    def __init__(self, args):
+    def __init__(self, args, data_loader):
         self.save_to = args.save_to_path
         self.load_from = args.load_from_path
+        tag_to_id = data_loader.tag_to_id
+        self.constraints = [[[tag_to_id["B-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["B-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]],
+                            [[tag_to_id["O"]] * 4, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"], tag_to_id["I-GPE"]]],
+                            [[tag_to_id["I-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+                            [[tag_to_id["I-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]]]
+
+        # print self.constraints
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
@@ -47,7 +59,7 @@ class CRF_Model(object):
 class vanilla_NER_CRF_model(CRF_Model):
     ''' Implement End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. '''
     def __init__(self, args, data_loader):
-        super(vanilla_NER_CRF_model, self).__init__(args)
+        super(vanilla_NER_CRF_model, self).__init__(args, data_loader)
         self.model = dy.Model()
         self.args = args
 
@@ -102,7 +114,7 @@ class vanilla_NER_CRF_model(CRF_Model):
                                            output_dropout_rate=output_dropout_rate)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs = self.char_cnn_encoder.encode(char_sents, training=training)
@@ -136,7 +148,7 @@ class BiRNN_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
-        super(BiRNN_CRF_model, self).__init__(args)
+        super(BiRNN_CRF_model, self).__init__(args, data_loader)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -188,7 +200,7 @@ class BiRNN_CRF_model(CRF_Model):
                                            output_dropout_rate=output_dropout_rate)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs = self.char_birnn_encoder.encode(char_sents, training=training, char=True)
@@ -222,7 +234,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
-        super(CNN_BiRNN_CRF_model, self).__init__(args)
+        super(CNN_BiRNN_CRF_model, self).__init__(args, data_loader)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -282,7 +294,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
                                            vocab_size=0)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs_birnn = self.char_birnn_encoder.encode(char_sents, training=training, char=True)
@@ -317,7 +329,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
-        super(Sep_Encoder_CRF_model, self).__init__(args)
+        super(Sep_Encoder_CRF_model, self).__init__(args, data_loader)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -389,7 +401,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
                                            vocab_size=0)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs_birnn = self.char_birnn_encoder.encode(char_sents, training=training, char=True)
@@ -422,7 +434,7 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
     def __init__(self, args, data_loader):
         self.model = dy.Model()
         self.args = args
-        super(Sep_CNN_Encoder_CRF_model, self).__init__(args)
+        super(Sep_CNN_Encoder_CRF_model, self).__init__(args, data_loader)
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
@@ -485,7 +497,7 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
                                            vocab_size=0)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs_cnn = self.char_cnn_encoder.encode(char_sents, training=training, char=True)

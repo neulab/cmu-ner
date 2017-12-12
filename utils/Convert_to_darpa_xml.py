@@ -39,7 +39,7 @@ def run_program_darpa(input, output):
                     assert len(line_split) == 11
                 if line_split[-1][0] == 'B':
                     if in_entity:
-                        print_entities(fout,entities, curr_docum, curr_anot)
+                        print_entities(fout, entities, curr_docum, curr_anot)
                         # restart
                         entities[0] = []
                         entities[1] = None
@@ -85,7 +85,7 @@ def run_program_darpa(input, output):
             else:
                 if in_entity:
                     # print 'We are in an entity and met sentence boundary, line: ' + str(i + 1) + '\n'
-                    print_entities(fout,entities, curr_docum, curr_anot)
+                    print_entities(fout, entities, curr_docum, curr_anot)
                     entities[0] = []
                     entities[1] = None
                     entities[2] = -1
