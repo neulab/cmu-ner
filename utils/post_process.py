@@ -422,16 +422,16 @@ if __name__ == "__main__":
     pred = "./debug/pred.conll"
     pred = "../eval/ensemble3_59df10_darpa_output.conll"
     # pred = "./post_test.txt"
-    setE_conll = "../new_datasets/setE/tig/setE.conll"
+    #setE_conll = "../new_datasets/setE/tig/setE.conll"
     pred = "./debug/ensemble_67.conll"
-
+    pred = "../eval/ensemble_new_7324cc_darpa_output.conll"
     # lookup_file = {"Gen": "../eval/oromo/Oromo_Annotated.txt"}
-    output_file = "post_output_67.txt"
+    output_file = "post_new.txt"
     gold_file_path = "../ner_score/tir_setE_edl.tac"
-    f_conll_out = "post_output_67.conll"
-
+    f_conll_out = "post_output.conll"
+    f_conll_out = None
     post_processing(pred, setE_conll, author_list, output_file, lookup_files=None, label_propagate=True,
-                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=100, fout_conll_name=f_conll_out)
+                    gold_file_path=gold_file_path, conf_num=2, most_freq_num=200, fout_conll_name=f_conll_out)
     # post_process_lookup(pred, setE_conll, author_list, output_file, lookup_file)
 
     import os
