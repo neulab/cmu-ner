@@ -4,11 +4,7 @@ import os
 from utils.features import *
 from utils.util import *
 
-<<<<<<< HEAD
 #from utils.orm_norm import orm_morph
-=======
-# from utils.orm_norm import orm_morph
->>>>>>> 03780ea358894ce7bd5a662581e2462a1aeb18e1
 from utils import orm_morph
 
 
