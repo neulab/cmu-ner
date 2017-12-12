@@ -47,8 +47,8 @@ class chain_CRF_decoder(Decoder):
 
         # (to, from), trans[i] is the transition score to i
         init_transition_matrix = np.random.randn(tag_size, tag_size)
-        init_transition_matrix[:, self.start_id] = -1000.0
-        init_transition_matrix[self.end_id, :] = -1000.0
+        init_transition_matrix[self.start_id, :] = -1000.0
+        init_transition_matrix[:, self.end_id] = -1000.0
         if constraints is not None:
             init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
 
