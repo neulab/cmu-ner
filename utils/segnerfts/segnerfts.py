@@ -734,9 +734,15 @@ TOKEN_START, TOKEN_END = 9, 15
 GAZ_START, GAZ_END = 15, 24
 MORPH_START, MORPH_END = 24, 47
 
+
+def concat_list(l1, l2):
+    return [a+b for a, b in zip(l1, l2)]
+
+
 def fake_extract(lang, seg):
     fts = [ex(lang)(seg) for ex in extractors]
     return fts
+
 
 def extract(lang, seg, s, e):
     fts = zip(*[ex(lang)(seg) for ex in extractors[s:e]])
@@ -771,10 +777,16 @@ def extract_type_token_level(lang, seg):
 def extract_type_token_morph(lang, seg):
     fts_type_token = extract_type_token_level(lang, seg)
     fts_morph = extract_morph_features(lang, seg)
-    return fts_type_token + fts_morph
+    return concat_list(fts_type_token, fts_morph)
 
 
 def extract_type_token_gaz(lang, seg):
     fts_type_token = extract_type_token_level(lang, seg)
     fts_gaz = extract_gaz_features(lang, seg)
-    return fts_type_token + fts_gaz
+    return concat_list(fts_type_token, fts_gaz)
+
+
+if __name__ == "__main__":
+    seg = [u'\u121d\u12dd\u1263\u12d5', u'\u12a3\u12e8\u122d', u'-', u'\u12f6\u1265', u'\u12a3\u120d\u1266', u'\u12c8\u1325\u122a', u'\u12d3\u1208\u121d']
+    a = extract_type_token_morph("tir", seg)
+    print(len(a), len(a[0]))

@@ -252,7 +252,7 @@ class NER_DataLoader():
                     one_sent = []
                 else:
                     one_sent.append(line.strip())
-                
+
             if len(one_sent) > 0:
                 add_sent(one_sent)
 
