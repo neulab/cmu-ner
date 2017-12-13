@@ -103,6 +103,61 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
 
     return 0, prec, recall, f1
 
+def evaluate_lr_splitHashtag(data_loader, path, model, model_name, score_file, setE, args):
+    sents, char_sents, discrete_features, origin_sents, bc_feats = data_loader.get_lr_test(path, args.lang)
+    print "Evaluation data size: ", len(sents)
+    prefix = model_name + "_" + str(uid)
+    predictions = []
+    i = 0
+    for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+        dy.renew_cg()
+        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
+        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+
+        predictions.append(best_path)
+
+        i += 1
+        if i % 1000 == 0:
+            print "Testing processed %d lines " % i
+
+    pred_output_fname = "../eval/%s_pred_output.conll" % (prefix)
+    with codecs.open(pred_output_fname, "w", "utf-8") as fout:
+        for pred, sent in zip(predictions, origin_sents):
+            for p, word in zip(pred, sent):
+                if p not in data_loader.id_to_tag:
+                    print "ERROR: Predicted tag not found in the id_to_tag dict, the id is: ", p
+                    p = 0
+                fout.write(word + "\tNNP\tNP\t" + data_loader.id_to_tag[p] + "\n")
+            fout.write("\n")
+
+    pred_darpa_output_fname = "../eval/%s_darpa_pred_output.conll" % (prefix)
+    final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
+    final_output_fname = "../eval/%s_fixed_darpa_output.conll" % (prefix)
+    scoring_file = "../eval/%s_score_file" % (prefix)
+    run_program(pred_output_fname, pred_darpa_output_fname, setE)
+
+    run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+
+    #Putting Hashtags back
+    os.system(
+            "python ../../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname,args.lang, args.lang, final_output_fname))
+    os.system("bash %s ../eval/%s %s" % (score_file, final_output_fname, scoring_file))
+
+    prec = 0
+    recall = 0
+    f1 = 0
+    with codecs.open(scoring_file, 'r') as fileout:
+        for line in fileout:
+            columns = line.strip().split('\t')
+            if len(columns) == 8 and columns[-1] == "strong_typed_mention_match":
+                prec=float(columns[-4])
+                recall =float(columns[-3])
+                f1 = float(columns[-2])
+                break
+
+    return 0, prec, recall, f1
+
 
 def replace_singletons(data_loader, sents, replace_rate):
     new_batch_sents = []
@@ -138,9 +193,14 @@ def test_on_full_setE(ner_data_loader, args):
         raise NotImplementedError
 
     model.load()
-    acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name, args.score_file, args.setEconll)
+    if args.valid_using_split:
+        acc, precision, recall, f1 = evaluate_lr_splitHashtag(ner_data_loader, args.test_path, model,
+                                                              "best_" + args.model_name, args.score_file,
+                                                              args.setEconll, args)
+    else:
+        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name,
+                                                 args.score_file, args.setEconll)
     return acc, precision, recall, f1
-
 
 def main(args):
     prefix = args.model_name + "_" + str(uid)
@@ -393,6 +453,11 @@ def test_with_two_models(args):
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    if args.valid_using_split:
+        os.system(
+            "python ../../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
@@ -472,6 +537,11 @@ def test_single_model(args):
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    if args.valid_using_split:
+        os.system(
+            "python ../../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
@@ -566,6 +636,11 @@ def ensemble_test_single_model(args):
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
+    if args.valid_using_split:
+        os.system(
+            "python ../../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+                final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
@@ -658,6 +733,7 @@ def init_config():
     parser.add_argument("--label_prop", default=False, action="store_true")
     parser.add_argument("--confidence_num", default=2, type=str)
     parser.add_argument("--author_file", default=None, type=str)
+    parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--lookup_file", default=None, type=str)
     parser.add_argument("--freq_ngram", default=20, type=int)
 
