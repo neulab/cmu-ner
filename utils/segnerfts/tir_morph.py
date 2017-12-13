@@ -41,7 +41,8 @@ def log_error(*args, **kwargs):
 ######################################
 
 #dict_path = "/home/data/LoReHLT17/internal/Morph/Tir/v5/" # on miami
-dict_path = "/usr2/data/shared/LoReHLT17/internal/Morph/Tir/v5/"  # on lor
+#dict_path = "/usr2/data/shared/LoReHLT17/internal/Morph/Tir/v5/"  # on lor
+dict_path = "../utils/segnerfts/res/tir/"  # on lor
 #dict_path = "D:\\Projects\\LORELEI Surprise Language\\morphology\\v5\\"
 
 # output IPA format: True (tir-Ethi-pp), False (tir-Ethi which is used internally)
