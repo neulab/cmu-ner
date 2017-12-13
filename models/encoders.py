@@ -89,7 +89,7 @@ class Discrete_Feature_Encoder(Encoder):
         output_emb = []
         for wif in input_feats:
             extend_wif = dy.transpose(dy.concatenate_cols([wif for _ in range(self.to_dim)]))
-            feature_emb = dy.cmult(extend_wif, self.W_feat_emb)
+            feature_emb = dy.cmult(extend_wif, W_feat_emb)
             output_emb.append(dy.reshape(feature_emb, (self.to_dim * self.num_feats, ), batch_size=batch_size))
         return output_emb
 
