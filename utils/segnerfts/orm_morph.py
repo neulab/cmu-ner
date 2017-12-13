@@ -79,7 +79,9 @@ def normalize(text):
 #
 ######################################
 setSWords = []
-setSList = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/setS_wordlist.txt", "r")
+# setSList = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/setS_wordlist.txt", "r")
+setSList = open("../utils/segnerfts/res/setS_wordlist.txt", "r")
+
 for line in setSList:
 	setSWords.append(line.strip())
 
@@ -283,8 +285,8 @@ def parse(word, representation_name="lemma"):
     parses = PARSER.parse(normalize(word))
     #parses = PARSER.parse(ipa)
     if not parses:
-        print("Warning: cannot parse %s (%s)" % (word, ipa))
-        parses = [{representation_name:ipa,"cost":""}]
+        print("Warning: cannot parse %s" % word)
+        parses = [{representation_name: word, "cost": ""}]
     parses.sort(key=lambda x:len(x["cost"]) if "cost" in x else 0)
     #print([x[representation_name] for x in parses])
     return [unicode(x[representation_name]) for x in parses]

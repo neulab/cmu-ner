@@ -49,7 +49,7 @@ def load_gaz(gaz_fn):
     return gaz
 
 
-gazetteer = load_gaz('gaz.csv')
+gazetteer = load_gaz('../utils/segnerfts/gaz.csv')
 
 
 def ex_b_gaz(segment, language=None, label=None):
@@ -761,3 +761,18 @@ def extract_gaz_features(lang, seg):
 def extract_morph_features(lang, seg):
     fts = extract(lang, seg)
     return [v[MORPH_START:MORPH_END] for v in fts]
+
+
+def extract_type_token_level(lang, seg):
+    fts = extract(lang, seg)
+    return [v[TYPE_START:TOKEN_END] for v in fts]
+
+
+def extract_type_token_morph(lang, seg):
+    fts = extract(lang, seg)
+    return [v[TYPE_START:TOKEN_END] + v[MORPH_START:MORPH_END] for v in fts]
+
+
+def extract_type_token_gaz(lang, seg):
+    fts = extract(lang, seg)
+    return [v[TYPE_START:TOKEN_END] + v[GAZ_START:GAZ_END] for v in fts]
