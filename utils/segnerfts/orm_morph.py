@@ -129,8 +129,9 @@ def get_dictionary(dict_filenames):
 	   
     return l1_to_l2
 
-gazetteer = open("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_gaz.txt", "r")
+#gazetteer = open("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_gaz.txt", "r")
 gazDict = defaultdict(list)
+gazetteer = open("../utils/segnerfts/res/orm_gaz.txt", "r")
 
 for line in gazetteer:
 	parts = line.strip().split("\t")
@@ -140,7 +141,8 @@ for line in gazetteer:
 			ormWord = ormWord[:-1]
 		gazDict[ormWord].append(parts[0])
 
-knightFile = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/orm_knight_lexicon.tsv", "r")
+#knightFile = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/orm_knight_lexicon.tsv", "r")
+knightFile = open("../utils/segnerfts/res/orm_knight_lexicon.tsv", "r")
 
 for line in knightFile:
 	parts = line.strip().split("\t")
@@ -265,7 +267,8 @@ class Lookup(Parser):
 Cost = Concatenated("cost")
 Nat = Concatenated("natural")
 #PARSER      = Lookup("orm_lexicon.txt", Tex/Mor/Lem, Glo/Cit/Nat)
-LEMMA = Lookup(("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon_wikibooks.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
+LEMMA = Lookup(("../utils/segnerfts/res/orm_lexicon.txt", "../utils/segnerfts/res/orm_lexicon_wikibooks.txt", "../utils/segnerfts/res/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
+#LEMMA = Lookup(("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon_wikibooks.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
 
 ##############################
 #
@@ -493,4 +496,4 @@ if __name__ == '__main__':
 		print(parse(pair[0], "gloss"))
         	#print("HERE!!!",parse(pair[0], "gloss"))
 		testprint(pair[0])
-	 
+
