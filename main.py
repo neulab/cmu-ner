@@ -451,11 +451,11 @@ def test_with_two_models(args):
     final_darpa_output_fname = "../eval/%s_darpa_output.conll" % (prefix)
     scoring_file = "../eval/%s_score_file" % (prefix)
     run_program(pred_output_fname, pred_darpa_output_fname, args.setEconll)
-
+    # ../helper_files/
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
         os.system(
-            "python ../../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
+            "python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/original  --split_hashtag_dir /usr2/data/zsheikh/SF/hashtag_splitter/%s/full_setE/split_all_hashtags_v2 > ../eval/%s" % (
                 final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
 
     os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
@@ -728,17 +728,18 @@ def init_config():
     parser.add_argument("--brown_cluster_num", default=500, type=int, action="store")
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--use_gazatter", default=False, action="store_true")
-
+    parser.add_argument("--use_morph", default=False, action="store_true")
+    
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
     parser.add_argument("--confidence_num", default=2, type=str)
     parser.add_argument("--author_file", default=None, type=str)
-    parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--lookup_file", default=None, type=str)
     parser.add_argument("--freq_ngram", default=20, type=int)
 
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--valid_on_full", default=False, action="store_true")
+    parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")
     parser.add_argument("--setEconll_10", type=str, default=None, help="path to the 10% setE conll file")
     parser.add_argument("--score_file", type=str, default=None,help="path to the scoring file for full setE conll file")
