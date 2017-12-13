@@ -729,7 +729,7 @@ def init_config():
     parser.add_argument("--brown_cluster_dim", default=30, type=int, action="store")
     parser.add_argument("--use_gazatter", default=False, action="store_true")
     parser.add_argument("--use_morph", default=False, action="store_true")
-    
+
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
     parser.add_argument("--confidence_num", default=2, type=str)

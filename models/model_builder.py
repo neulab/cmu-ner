@@ -86,7 +86,7 @@ class vanilla_NER_CRF_model(CRF_Model):
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
             self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
-            birnn_input_dim += args.feature_dim
+            birnn_input_dim += args.feature_dim * self.num_feats
 
         if args.use_brown_cluster:
             bc_num = args.brown_cluster_num
@@ -170,7 +170,7 @@ class BiRNN_CRF_model(CRF_Model):
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
             self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
-            birnn_input_dim += args.feature_dim
+            birnn_input_dim += args.feature_dim * self.num_feats
 
         if args.use_brown_cluster:
             bc_num = args.brown_cluster_num
@@ -259,7 +259,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
             self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
-            birnn_input_dim += args.feature_dim
+            birnn_input_dim += args.feature_dim * self.num_feats
 
         if args.use_brown_cluster:
             bc_num = args.brown_cluster_num
@@ -357,7 +357,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
             self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
-            self.feature_birnn_input_dim += args.feature_dim
+            self.feature_birnn_input_dim += args.feature_dim * self.num_feats
 
         if args.use_brown_cluster:
             bc_num = args.brown_cluster_num
@@ -461,7 +461,7 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
         if args.use_discrete_features:
             self.num_feats = data_loader.num_feats
             self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
-            self.feature_birnn_input_dim += args.feature_dim
+            self.feature_birnn_input_dim += args.feature_dim * self.num_feats
 
         if args.use_brown_cluster:
             bc_num = args.brown_cluster_num

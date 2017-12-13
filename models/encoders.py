@@ -82,10 +82,15 @@ class Discrete_Feature_Encoder(Encoder):
         self.W_feat_emb = model.add_parameters((to_dim, num_feats))
 
     def encode(self, input_feats):
+        batch_size = len(input_feats)
         # after transpose: input_feats: [(num_feats, batch_size)]
         input_feats = transpose_discrete_features(input_feats)
         W_feat_emb = dy.parameter(self.W_feat_emb)
-        output_emb = [W_feat_emb * ii for ii in input_feats]
+        output_emb = []
+        for wif in input_feats:
+            extend_wif = dy.transpose(dy.concatenate_cols([wif for _ in range(self.to_dim)]))
+            feature_emb = dy.cmult(extend_wif, self.W_feat_emb)
+            output_emb.append(dy.reshape(feature_emb, (self.to_dim * self.num_feats, ), batch_size=batch_size))
         return output_emb
 
 
