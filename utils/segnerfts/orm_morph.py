@@ -286,7 +286,7 @@ def parse(word, representation_name="lemma"):
     #parses = PARSER.parse(ipa)
     if not parses:
         print("Warning: cannot parse %s" % word)
-        parses = [{representation_name:ipa,"cost":""}]
+        parses = [{representation_name: word, "cost": ""}]
     parses.sort(key=lambda x:len(x["cost"]) if "cost" in x else 0)
     #print([x[representation_name] for x in parses])
     return [unicode(x[representation_name]) for x in parses]
