@@ -460,8 +460,8 @@ def test_with_two_models(args):
     # ../helper_files/
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
-	os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
-    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+        os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -541,9 +541,8 @@ def test_single_model(args):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
-	
-	os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
-    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+        os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -638,9 +637,8 @@ def ensemble_test_single_model(args):
 
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
-
-	os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
-    os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+        os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -754,6 +752,8 @@ def init_config():
 
     # We are not using uuid to make a unique time stamp, since I thought there is no need to do so when we specify a good model_name.
 
+    # If use score_10pct.sh, put the setE_10pct.txt as the dev_path
+    # If use valid_using_split, set the test_path and setEconll to be the splitted version, this is used for full setE testing
     if args.train_ensemble:
         # model_name = ens_1_ + original
         # set dynet seed manually

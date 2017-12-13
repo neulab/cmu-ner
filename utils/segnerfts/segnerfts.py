@@ -738,41 +738,43 @@ def fake_extract(lang, seg):
     fts = [ex(lang)(seg) for ex in extractors]
     return fts
 
-def extract(lang, seg):
-    fts = zip(*[ex(lang)(seg) for ex in extractors])
+def extract(lang, seg, s, e):
+    fts = zip(*[ex(lang)(seg) for ex in extractors[s:e]])
     return [list(map(int, f)) for f in fts]
 
 
 def extract_type_level(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TYPE_START:TYPE_END] for v in fts]
+    fts = extract(lang, seg, TYPE_START, TYPE_END)
+    return fts
 
 
 def extract_token_level(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TOKEN_START:TOKEN_END] for v in fts]
+    fts = extract(lang, seg, TOKEN_START, TOKEN_END)
+    return fts
 
 
 def extract_gaz_features(lang, seg):
-    fts = extract(lang, seg)
-    return [v[GAZ_START:GAZ_END] for v in fts]
+    fts = extract(lang, seg, GAZ_START, GAZ_END)
+    return fts
 
 
 def extract_morph_features(lang, seg):
-    fts = extract(lang, seg)
-    return [v[MORPH_START:MORPH_END] for v in fts]
+    fts = extract(lang, seg, MORPH_START, MORPH_END)
+    return fts
 
 
 def extract_type_token_level(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TYPE_START:TOKEN_END] for v in fts]
+    fts = extract(lang, seg, TYPE_START, TOKEN_END)
+    return fts
 
 
 def extract_type_token_morph(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TYPE_START:TOKEN_END] + v[MORPH_START:MORPH_END] for v in fts]
+    fts_type_token = extract_type_token_level(lang, seg)
+    fts_morph = extract_morph_features(lang, seg)
+    return fts_type_token + fts_morph
 
 
 def extract_type_token_gaz(lang, seg):
-    fts = extract(lang, seg)
-    return [v[TYPE_START:TOKEN_END] + v[GAZ_START:GAZ_END] for v in fts]
+    fts_type_token = extract_type_token_level(lang, seg)
+    fts_gaz = extract_gaz_features(lang, seg)
+    return fts_type_token + fts_gaz
