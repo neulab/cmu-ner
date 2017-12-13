@@ -246,13 +246,13 @@ class NER_DataLoader():
                 if line.strip() == "":
                     if len(one_sent) > 0:
                         add_sent(one_sent)
+                        i += 1
+                        if i % 1000 == 0:
+                            print("Processed %d training data." % (i,))
                     one_sent = []
                 else:
                     one_sent.append(line.strip())
-                i += 1
-                if i % 1000 == 0:
-                    print("Processed %d training data." % (i,))
-
+                
             if len(one_sent) > 0:
                 add_sent(one_sent)
 
