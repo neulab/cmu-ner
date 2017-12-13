@@ -349,9 +349,13 @@ class NER_DataLoader():
                     one_sent = []
                 else:
                     one_sent.append(line.strip())
-            if len(one_sent) > 0:
-                add_sent(one_sent)
+		i += 1
+		if i % 1000:
+		print("Processed %d testing data." % (i,))
 
+	   if len(one_sent) > 0:
+                add_sent(one_sent)
+	    
         if self.use_discrete_feature:
             self.num_feats = len(discrete_features[0][0])
         else:
@@ -419,7 +423,8 @@ class Dataloader_Combine():
             discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             original_sents.append(temp_ori_sent)
             # print len(discrete_features[-1])
-
+	
+	i = 1
         with codecs.open(path, "r", "utf-8") as fin:
             one_sent = []
             for line in fin:
@@ -429,10 +434,13 @@ class Dataloader_Combine():
                     one_sent = []
                 else:
                     one_sent.append(line.strip())
-            if len(one_sent) > 0:
+		i+=1
+		if i % 1000 == 0:
+		    print("Processed %d testing data." % (i,))
+	    if len(one_sent) > 0:
                 add_sent(one_sent)
-
-        if self.use_discrete_feature:
+        
+	if self.use_discrete_feature:
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
