@@ -54,8 +54,8 @@ def evaluate(data_loader, path, model, model_name):
     return acc, precision, recall, f1
 
 
-def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
-    sents, char_sents, discrete_features, origin_sents, bc_feats = data_loader.get_lr_test(path, args.lang)
+def evaluate_lr(data_loader, model, model_name, score_file, setE, data):
+    sents, char_sents, discrete_features, origin_sents, bc_feats = data
     print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
     predictions = []
@@ -103,8 +103,8 @@ def evaluate_lr(data_loader, path, model, model_name, score_file, setE):
 
     return 0, prec, recall, f1
 
-def evaluate_lr_splitHashtag(data_loader, path, model, model_name, score_file, setE, args):
-    sents, char_sents, discrete_features, origin_sents, bc_feats = data_loader.get_lr_test(path, args.lang)
+def evaluate_lr_splitHashtag(data_loader, model, model_name, score_file, setE, args, data):
+    sents, char_sents, discrete_features, origin_sents, bc_feats = data
     print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
     predictions = []
@@ -172,7 +172,7 @@ def replace_singletons(data_loader, sents, replace_rate):
     return new_batch_sents
 
 
-def test_on_full_setE(ner_data_loader, args):
+def test_on_full_setE(ner_data_loader, args, data):
 
     if args.model_arc == "char_cnn":
         print "Using Char CNN model!"
@@ -193,13 +193,14 @@ def test_on_full_setE(ner_data_loader, args):
         raise NotImplementedError
 
     model.load()
+    # data = (sents, char_sents, discrete_features, origin_sents, bc_feats)
     if args.valid_using_split:
-        acc, precision, recall, f1 = evaluate_lr_splitHashtag(ner_data_loader, args.test_path, model,
+        acc, precision, recall, f1 = evaluate_lr_splitHashtag(ner_data_loader, model,
                                                               "best_" + args.model_name, args.score_file,
-                                                              args.setEconll, args)
+                                                              args.setEconll, args, data)
     else:
-        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, "best_" + args.model_name,
-                                                 args.score_file, args.setEconll)
+        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, "best_" + args.model_name,
+                                                 args.score_file, args.setEconll, data)
     return acc, precision, recall, f1
 
 def main(args):
@@ -218,6 +219,11 @@ def main(args):
         sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
         sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
 
+    data_test = ner_data_loader.get_lr_test(args.test_path, args.lang)
+    if not args.valid_on_full:
+        data_valid = ner_data_loader.get_lr_test(args.dev_path, args.lang)
+    else:
+        data_valid = data_test
     # print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
     print("Number of discrete features: ", ner_data_loader.num_feats)
@@ -294,9 +300,9 @@ def main(args):
                     acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
                 else:
                     if args.valid_on_full:
-                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.test_path, model, args.model_name, args.score_file, args.setEconll)
+                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
                     else:
-                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, args.dev_path, model, args.model_name, args.score_file_10, args.setEconll_10)
+                        acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file_10, args.setEconll_10, data_valid)
                     results = [acc, precision, recall, f1]
                     print("Current validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -327,7 +333,7 @@ def main(args):
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
+                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
                     results = [acc, precision, recall, f1]
                     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
@@ -338,7 +344,7 @@ def main(args):
         epoch += 1
 
      # Test on full SetE
-    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args)
+    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
     results = [acc, precision, recall, f1]
     print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
     # post processing
