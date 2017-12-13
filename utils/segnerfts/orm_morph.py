@@ -79,7 +79,9 @@ def normalize(text):
 #
 ######################################
 setSWords = []
-setSList = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/setS_wordlist.txt", "r")
+# setSList = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/setS_wordlist.txt", "r")
+setSList = open("../utils/segnerfts/res/setS_wordlist.txt", "r")
+
 for line in setSList:
 	setSWords.append(line.strip())
 

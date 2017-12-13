@@ -1,10 +1,14 @@
-import utils.segnerfts as segnerfts
+from utils.segnerfts import segnerfts
 import codecs
 
 
 def get_feature_sent(lang, sent, args):
-    if args.use_gazatter:
+    if args.use_gazatter and args.use_morph:
         return segnerfts.extract(lang, sent)
+    elif args.use_gazatter:
+        return segnerfts.extract_type_token_gaz(lang, sent)
+    elif args.use_morph:
+        return segnerfts.extract_type_token_morph(lang, sent)
     else:
         return segnerfts.extract_type_token_level(lang, sent)
 

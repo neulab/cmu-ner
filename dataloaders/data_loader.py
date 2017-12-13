@@ -4,10 +4,10 @@ import os
 from utils.features import *
 from utils.util import *
 
-# from utils.orm_norm import orm_morph
 
-from utils import orm_morph
-
+from utils.orm_norm import orm_morph
+from utils.orm_norm import ormnorm
+#from utils import orm_morph
 
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
@@ -105,7 +105,8 @@ class NER_DataLoader():
             if self.orm_lower:
                 word = word.lower()
             if self.orm_norm:
-                word = orm_morph.best_parse(word)
+                #word = orm_morph.best_parse(word)
+                word = ormnorm.normalize(word)
             word_dict[word] += 1
 
     def get_vocab_from_set(self, a_set, shift=0):
@@ -194,7 +195,8 @@ class NER_DataLoader():
                         if self.orm_lower:
                             word = word.lower()
                         if self.orm_norm:
-                            word = orm_morph.best_parse(word)
+                            #word = orm_morph.best_parse(word)
+                            word = ormnorm.normalize(word)
                         word_dict[word] += 1
 
         tag_vocab = self.get_vocab_from_set(tag_set)
@@ -226,7 +228,8 @@ class NER_DataLoader():
                     word = word.lower()
 
                 if self.orm_norm:
-                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    #word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
@@ -274,7 +277,8 @@ class NER_DataLoader():
                 if self.orm_lower:
                     word = word.lower()
                 if self.orm_norm:
-                    word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    #word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                    word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
 
@@ -325,7 +329,8 @@ class NER_DataLoader():
                     word = word.lower()
 
                 if self.orm_norm:
-                    word = orm_morph.best_parse(word)
+                    #word = orm_morph.best_parse(word)
+                    word = ormnorm.normalize(word)
 
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
@@ -403,7 +408,8 @@ class Dataloader_Combine():
                         word = word.lower()
 
                     if self.orm_norm:
-                        word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                        #word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
+                        word = ormnorm.normalize(word)
                     temp_sent.append(self.lower_word_to_id[word] if word in self.lower_word_to_id else self.lower_word_to_id["<unk>"])
                 else:
                     temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
