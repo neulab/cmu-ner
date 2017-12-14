@@ -462,6 +462,8 @@ def test_with_two_models(args):
     if args.valid_using_split:
         os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
         os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+    else:
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
     recall = 0
@@ -542,6 +544,8 @@ def test_single_model(args):
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
         os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+    else:
         os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
@@ -638,6 +642,8 @@ def ensemble_test_single_model(args):
     run_program_darpa(pred_darpa_output_fname, final_darpa_output_fname)
     if args.valid_using_split:
         os.system("python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (final_darpa_output_fname, args.lang, args.lang, final_darpa_output_fname))
+        os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
+    else:
         os.system("bash %s ../eval/%s %s" % (args.score_file, final_darpa_output_fname, scoring_file))
 
     prec = 0
