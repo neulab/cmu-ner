@@ -317,8 +317,11 @@ def post_processing(path_darpa_prediction,
         print("#" * 6 + "More friendly format: " + "#" * 6)
         _print(vote_out_ents)
         print("######## Please do some correction or addition here if you are willing to! #########")
-        vote_out_ents["#VOATigrigna"] = "ORG"
-        vote_out_ents[u"\u12ad\u120d\u120d"] = "O"
+        vote_out_ents["#OromoProtests"] = "PER"
+        vote_out_ents["#OromoRevolution"] = "PER"
+        vote_out_ents["#Ethiopia"] = "GPE"
+        vote_out_ents["FXG"] = "PER"
+        vote_out_ents["Aanaa"] = "GPE"
         # vote_out_ents.__delitem__(u"\u12ad\u120d\u120d")
         print("#" * 6 + "After your correction, now they are: " + "#" * 6)
         _print(vote_out_ents)

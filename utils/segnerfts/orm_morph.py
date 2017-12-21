@@ -80,7 +80,7 @@ def normalize(text):
 ######################################
 setSWords = []
 # setSList = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/setS_wordlist.txt", "r")
-setSList = open("../utils/segnerfts/res/setS_wordlist.txt", "r")
+setSList = open("/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/setS_wordlist.txt", "r")
 
 for line in setSList:
 	setSWords.append(line.strip())
@@ -131,7 +131,7 @@ def get_dictionary(dict_filenames):
 
 #gazetteer = open("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_gaz.txt", "r")
 gazDict = defaultdict(list)
-gazetteer = open("../utils/segnerfts/res/orm_gaz.txt", "r")
+gazetteer = open("/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/orm_gaz.txt", "r")
 
 for line in gazetteer:
 	parts = line.strip().split("\t")
@@ -142,7 +142,7 @@ for line in gazetteer:
 		gazDict[ormWord].append(parts[0])
 
 #knightFile = open("/home/data/LoReHLT17/internal/Lexicons/orm_lexicon/orm_knight_lexicon.tsv", "r")
-knightFile = open("../utils/segnerfts/res/orm_knight_lexicon.tsv", "r")
+knightFile = open("/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/orm_knight_lexicon.tsv", "r")
 
 for line in knightFile:
 	parts = line.strip().split("\t")
@@ -267,7 +267,7 @@ class Lookup(Parser):
 Cost = Concatenated("cost")
 Nat = Concatenated("natural")
 #PARSER      = Lookup("orm_lexicon.txt", Tex/Mor/Lem, Glo/Cit/Nat)
-LEMMA = Lookup(("../utils/segnerfts/res/orm_lexicon.txt", "../utils/segnerfts/res/orm_lexicon_wikibooks.txt", "../utils/segnerfts/res/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
+LEMMA = Lookup(("/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/orm_lexicon.txt", "/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/orm_lexicon_wikibooks.txt", "/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/res/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
 #LEMMA = Lookup(("/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/orm_lexicon_wikibooks.txt", "/home/data/LoReHLT17/internal/Morph/Orm/v4/lexicon_supplement.txt"), Tex/Mor/Lem, Glo/Cit/Nat)
 
 ##############################

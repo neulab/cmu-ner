@@ -49,7 +49,7 @@ def load_gaz(gaz_fn):
     return gaz
 
 
-gazetteer = load_gaz('../utils/segnerfts/gaz.csv')
+gazetteer = load_gaz('/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/utils/segnerfts/gaz.csv')
 
 
 def ex_b_gaz(segment, language=None, label=None):
