@@ -238,6 +238,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
         ner_tag_size = data_loader.ner_vocab_size
         char_vocab_size = data_loader.char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
+        ipa_char_vocab_size = data_loader.ipa_char_vocab_size
         word_padding_token = data_loader.word_padding_token
 
         char_emb_dim = args.char_emb_dim
@@ -269,7 +270,7 @@ class CNN_BiRNN_CRF_model(CRF_Model):
             birnn_input_dim += bc_dim
 
         self.char_cnn_encoder = CNN_Encoder(self.model, char_emb_dim, cnn_win_size, cnn_filter_size,
-                                            0.0, char_vocab_size, data_loader.char_padding_token)
+                                            0.0, ipa_char_vocab_size, data_loader.char_padding_token)
 
         self.char_birnn_encoder = BiRNN_Encoder(self.model,
                                                 char_emb_dim,

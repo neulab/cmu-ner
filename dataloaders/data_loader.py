@@ -5,6 +5,7 @@ from utils.features import *
 from utils.util import *
 
 from utils.segnerfts import orm_morph as ormnorm
+import epitran
 
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
@@ -41,6 +42,15 @@ class NER_DataLoader():
         else:
             self.brown_cluster_dicts = None
 
+        self.use_ipa = args.use_ipa
+        if args.lang == "orm":
+            epi = epitran.Epitran("orm-Latn")
+        elif args.lang == "eng":
+            epi = epitran.Epitran("eng-Latn")
+        elif args.lang == "tir":
+            epi = epitran.Epitran("tir-Ethi")
+        self.g2p = epi.transliterate
+
         if False and os.path.exists(self.tag_vocab_path) and os.path.exists(self.word_vocab_path) and os.path.exists(self.char_vocab_path):
             # TODO: encoding?
             print("Load vocabs from file ....")
@@ -52,18 +62,20 @@ class NER_DataLoader():
             print("Generating vocabs from training file ....")
             if not self.args.isLr:
                 paths_to_read = [self.train_path, self.test_path, self.dev_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+                self.tag_to_id, self.word_to_id, self.char_to_id,self.ipa_char_to_id = self.read_files(paths_to_read)
             else:
                 paths_to_read = [self.train_path]
                 setEpaths = [self.dev_path, self.test_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files_lr(paths_to_read, setEpaths)
+                self.tag_to_id, self.word_to_id, self.char_to_id,self.ipa_char_to_id  = self.read_files_lr(paths_to_read, setEpaths)
             # FIXME: Remember dictionary value for char and word has been shifted by 1
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
             self.char_to_id['<unk>'] = len(self.char_to_id) + 1
+            self.ipa_char_to_id['<unk>'] = len(self.ipa_char_to_id) + 1
 
             self.word_to_id['<\s>'] = 0
             self.char_to_id['<pad>'] = 0
+            self.ipa_char_to_id['<pad>'] = 0
             print "Size of vocab after: ", len(self.word_to_id)
             pkl_dump(self.tag_to_id, self.tag_vocab_path)
             pkl_dump(self.char_to_id, self.char_vocab_path)
@@ -79,19 +91,22 @@ class NER_DataLoader():
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
         self.id_to_word = {v: k for k, v in self.word_to_id.iteritems()}
         self.id_to_char = {v: k for k, v in self.char_to_id.iteritems()}
+        self.id_to_char_ipa = {v: k for k, v in self.ipa_char_to_id.iteritems()}
 
         self.ner_vocab_size = len(self.id_to_tag)
         self.word_vocab_size = len(self.id_to_word)
         self.char_vocab_size = len(self.id_to_char)
+        self.ipa_char_vocab_size = len(self.id_to_char_ipa)
 
         print "Size of vocab after: ", len(self.word_to_id)
-        print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
+        print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d, IPA Char Vocab Size=%d" % (
+        self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size, self.ipa_char_vocab_size))
 
     @staticmethod
     def exists(path):
         return os.path.exists(path)
 
-    def read_one_line(self, line, tag_set, word_dict, char_set):
+    def read_one_line(self, line, tag_set, word_dict, char_set,ipa_char_set):
         for w in line:
             fields = w.split()
             word = fields[0]
@@ -99,6 +114,9 @@ class NER_DataLoader():
             for c in word:
                 char_set.add(c)
             tag_set.add(ner_tag)
+            ipa_word = self.g2p(word)
+            for c in ipa_word:
+                ipa_char_set.add(c)
             if self.orm_lower:
                 word = word.lower()
             if self.orm_norm:
@@ -138,17 +156,18 @@ class NER_DataLoader():
         word_dict = defaultdict(lambda: 0)
         char_set = set()
         tag_set = set()
+        ipa_char_set = set()
 
         def _read_a_file(path):
             with codecs.open(path, "r", "utf-8") as fin:
                 to_read_line = []
                 for line in fin:
                     if line.strip() == "":
-                        self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                        self.read_one_line(to_read_line, tag_set, word_dict, char_set,ipa_char_set)
                         to_read_line = []
                     else:
                         to_read_line.append(line.strip())
-                self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                self.read_one_line(to_read_line, tag_set, word_dict, char_set,ipa_char_set)
 
         for path in paths:
             _read_a_file(path)
@@ -156,8 +175,9 @@ class NER_DataLoader():
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
         char_vocab = self.get_vocab_from_set(char_set, 1)
+        ipa_char_vocab = self.get_vocab_from_set(ipa_char_set, 1)
 
-        return tag_vocab, word_vocab, char_vocab
+        return tag_vocab, word_vocab, char_vocab, ipa_char_vocab
 
     def read_files_lr(self, paths, setEpaths):
         # word_list = []
@@ -166,17 +186,18 @@ class NER_DataLoader():
         word_dict = defaultdict(lambda: 0)
         char_set = set()
         tag_set = set()
+        ipa_char_set = set()
 
         def _read_a_file(path):
             with codecs.open(path, "r", "utf-8") as fin:
                 to_read_line = []
                 for line in fin:
                     if line.strip() == "":
-                        self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                        self.read_one_line(to_read_line, tag_set, word_dict, char_set,ipa_char_set)
                         to_read_line = []
                     else:
                         to_read_line.append(line.strip())
-                self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                self.read_one_line(to_read_line, tag_set, word_dict, char_set,ipa_char_set)
 
         for path in paths:
             _read_a_file(path)
@@ -189,6 +210,9 @@ class NER_DataLoader():
                     for word in fields:
                         for c in word:
                             char_set.add(c)
+                        ipa_word = self.g2p(word)
+                        for c in ipa_word:
+                            ipa_char_set.add(c)
                         if self.orm_lower:
                             word = word.lower()
                         if self.orm_norm:
@@ -199,8 +223,9 @@ class NER_DataLoader():
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
         char_vocab = self.get_vocab_from_set(char_set, 1)
+        ipa_char_vocab = self.get_vocab_from_set(ipa_char_set, 1)
 
-        return tag_vocab, word_vocab, char_vocab
+        return tag_vocab, word_vocab, char_vocab, ipa_char_vocab
 
     def get_data_set(self, path, lang):
         sents = []
@@ -208,12 +233,14 @@ class NER_DataLoader():
         tgt_tags = []
         discrete_features = []
         bc_features = []
+        ipa_sents = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_ner = []
             temp_char = []
             temp_bc = []
+            temp_ipa  = []
             for w in one_sent:
                 fields = w.split()
                 word = fields[0]
@@ -230,12 +257,15 @@ class NER_DataLoader():
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+                ipa_word = self.g2p(word)
+                temp_ipa.append([self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id["<unk>"] for c in ipa_word])
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
             bc_features.append(temp_bc)
             discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
+            ipa_sents.append(temp_ipa)
 
             # print len(discrete_features[-1])
 
@@ -260,7 +290,7 @@ class NER_DataLoader():
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
-        return sents, char_sents, tgt_tags, discrete_features, bc_features
+        return sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents
 
     def get_lr_test(self, path, lang):
         # setE.txt
@@ -268,11 +298,13 @@ class NER_DataLoader():
         char_sents = []
         discrete_features = []
         bc_features = []
+        ipa_sents = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_char = []
             temp_bc = []
+            temp_ipa = []
             for word in one_sent:
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
@@ -283,11 +315,16 @@ class NER_DataLoader():
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+                ipa_word = self.g2p(word)
+                temp_ipa.append(
+                    [self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id["<unk>"] for c in
+                     ipa_word])
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
             discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             bc_features.append(temp_bc)
+            ipa_sents.append(temp_ipa)
 
         original_sents = []
         with codecs.open(path, "r", "utf-8") as fin:
@@ -306,7 +343,7 @@ class NER_DataLoader():
         else:
             self.num_feats = 0
 
-        return sents, char_sents, discrete_features, original_sents, bc_features
+        return sents, char_sents, discrete_features, original_sents, bc_features, ipa_sents
 
     def get_lr_test_setE(self, path, lang):
         # setE.conll
@@ -316,12 +353,14 @@ class NER_DataLoader():
         bc_features = []
         doc_ids = []
         original_sents = []
+        ipa_sents = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_char = []
             temp_bc = []
             temp_ori_sent = []
+            temp_ipa = []
             for w in one_sent:
                 tokens = w.split('\t')
                 word = tokens[0]
@@ -340,6 +379,10 @@ class NER_DataLoader():
 
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+                ipa_word = self.g2p(word)
+                temp_ipa.append(
+                    [self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id["<unk>"] for c in
+                     ipa_word])
 
             doc_ids.append(docfile.split('_')[1])
             sents.append(temp_sent)
@@ -347,6 +390,7 @@ class NER_DataLoader():
             bc_features.append(temp_bc)
             discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             original_sents.append(temp_ori_sent)
+            ipa_sents.append(temp_ipa)
             # print len(discrete_features[-1])
 
         with codecs.open(path, "r", "utf-8") as fin:
@@ -371,7 +415,7 @@ class NER_DataLoader():
         else:
             self.num_feats = 0
 
-        return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids
+        return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids, ipa_sents
 
 
 class Dataloader_Combine():

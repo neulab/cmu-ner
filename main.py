@@ -3,17 +3,17 @@ __author__ = 'chuntingzhou'
 
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
-    sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
+    sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents = data_loader.get_data_set(path, args.lang)
 
     prefix = model_name + "_" + str(uid)
     # tot_acc = 0.0
     predictions = []
     gold_standards = []
     i = 0
-    for sent, char_sent, tgt_tag, discrete_feature, bc_feat in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats):
+    for sent, char_sent, tgt_tag, discrete_feature, bc_feat, ipa_sent in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents):
         dy.renew_cg()
-        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        sent, char_sent, discrete_feature, bc_feat, ipa_sent = [sent], [char_sent], [discrete_feature], [bc_feat], [ipa_sent]
+        best_score, best_path = model.eval(sent, ipa_sent, discrete_feature, bc_feat, training=False)
 
         assert len(best_path) == len(tgt_tag)
         # acc = model.crf_decoder.cal_accuracy(best_path, tgt_tag)
@@ -55,15 +55,15 @@ def evaluate(data_loader, path, model, model_name):
 
 
 def evaluate_lr(data_loader, model, model_name, score_file, setE, data):
-    sents, char_sents, discrete_features, origin_sents, bc_feats = data
+    sents, char_sents, discrete_features, origin_sents, bc_feats, ipa_sents = data
     print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
     predictions = []
     i = 0
-    for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+    for sent, char_sent, discrete_feature, bc_feat, ipa_sent in zip(sents, char_sents, discrete_features, bc_feats, ipa_sents):
         dy.renew_cg()
-        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        sent, char_sent, discrete_feature, bc_feat, ipa_sent = [sent], [char_sent], [discrete_feature], [bc_feat], [ipa_sent]
+        best_score, best_path = model.eval(sent, ipa_sent, discrete_feature, bc_feat, training=False)
 
         predictions.append(best_path)
 
@@ -104,15 +104,15 @@ def evaluate_lr(data_loader, model, model_name, score_file, setE, data):
     return 0, prec, recall, f1
 
 def evaluate_lr_splitHashtag(data_loader, model, model_name, score_file, setE, args, data):
-    sents, char_sents, discrete_features, origin_sents, bc_feats = data
+    sents, char_sents, discrete_features, origin_sents, bc_feats, ipa_sents = data
     print "Evaluation data size: ", len(sents)
     prefix = model_name + "_" + str(uid)
     predictions = []
     i = 0
-    for sent, char_sent, discrete_feature, bc_feat in zip(sents, char_sents, discrete_features, bc_feats):
+    for sent, char_sent, discrete_feature, bc_feat, ipa_sent in zip(sents, char_sents, discrete_features, bc_feats, ipa_sents):
         dy.renew_cg()
-        sent, char_sent, discrete_feature, bc_feat = [sent], [char_sent], [discrete_feature], [bc_feat]
-        best_score, best_path = model.eval(sent, char_sent, discrete_feature, bc_feat, training=False)
+        sent, char_sent, discrete_feature, bc_feat, ipa_sent = [sent], [char_sent], [discrete_feature], [bc_feat], [ipa_sent]
+        best_score, best_path = model.eval(sent, ipa_sent, discrete_feature, bc_feat, training=False)
 
         predictions.append(best_path)
 
@@ -213,11 +213,11 @@ def main(args):
     print ner_data_loader.id_to_tag
 
     if not args.data_aug:
-        sents, char_sents, tgt_tags, discrete_features, bc_features = ner_data_loader.get_data_set(args.train_path, args.lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents = ner_data_loader.get_data_set(args.train_path, args.lang)
     else:
-        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
-        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
-        sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
+        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt,ipa_sents_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
+        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug,ipa_sents_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features,ipa_sents = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug, ipa_sents_tgt + ipa_sents_aug
 
     data_test = ner_data_loader.get_lr_test(args.test_path, args.lang)
     if not args.valid_on_full:
@@ -271,8 +271,8 @@ def main(args):
     valid_history = []
     best_results = [0.0, 0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
-        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats in make_bucket_batches(
-                zip(sents, char_sents, tgt_tags, discrete_features, bc_features), batch_size):
+        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, b_ipa_char_sents in make_bucket_batches(
+                zip(sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents), batch_size):
             dy.renew_cg()
 
             if args.replace_unk_rate > 0.0:
@@ -280,7 +280,7 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
+            loss = model.cal_loss(b_sents, b_ipa_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
@@ -574,25 +574,25 @@ def ensemble_test_single_model(args):
             paths.append(line.strip())
     models = []
 
-    for i, path in enumerate(paths):
-        if args.model_arc == "char_cnn":
-            print "Using Char CNN model!"
-            models.append(vanilla_NER_CRF_model(args, ner_data_loader))
-        elif args.model_arc == "char_birnn":
-            print "Using Char Birnn model!"
-            models.append(BiRNN_CRF_model(args, ner_data_loader))
-        elif args.model_arc == "char_birnn_cnn":
-            print "Using Char Birnn-CNN model!"
-            models.append(CNN_BiRNN_CRF_model(args, ner_data_loader))
-        elif args.model_arc == "sep":
-            print "Using seperate encoders for embedding and features (cnn and birnn char)!"
-            models.append(Sep_Encoder_CRF_model(args, ner_data_loader))
-        elif args.model_arc == "sep_cnn_only":
-            print "Using seperate encoders for embedding and features (cnn char)!"
-            models.append(Sep_CNN_Encoder_CRF_model(args, ner_data_loader))
-        else:
-            raise NotImplementedError
-        models[i].load(path)
+    # for i, path in enumerate(paths):
+    #     if args.model_arc == "char_cnn":
+    #         print "Using Char CNN model!"
+    #         models.append(vanilla_NER_CRF_model(args, ner_data_loader))
+    #     elif args.model_arc == "char_birnn":
+    #         print "Using Char Birnn model!"
+    #         models.append(BiRNN_CRF_model(args, ner_data_loader))
+    #     elif args.model_arc == "char_birnn_cnn":
+    #         print "Using Char Birnn-CNN model!"
+    #         models.append(CNN_BiRNN_CRF_model(args, ner_data_loader))
+    #     elif args.model_arc == "sep":
+    #         print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+    #         models.append(Sep_Encoder_CRF_model(args, ner_data_loader))
+    #     elif args.model_arc == "sep_cnn_only":
+    #         print "Using seperate encoders for embedding and features (cnn char)!"
+    #         models.append(Sep_CNN_Encoder_CRF_model(args, ner_data_loader))
+    #     else:
+    #         raise NotImplementedError
+    #     models[i].load(path)
 
     sents, char_sents, discrete_features, origin_sents, bc_feats = ner_data_loader.get_lr_test(
         args.test_path, args.lang)
@@ -736,6 +736,7 @@ def init_config():
     parser.add_argument("--freq_ngram", default=20, type=int)
 
     parser.add_argument("--isLr", default=False, action="store_true")
+    parser.add_argument("--use_ipa", default=False, action="store_true")
     parser.add_argument("--valid_on_full", default=False, action="store_true")
     parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")
