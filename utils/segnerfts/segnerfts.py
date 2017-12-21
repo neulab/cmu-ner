@@ -10,7 +10,7 @@ import tir_morph
 from functools import partial
 
 
-BEST_PARSE = True
+BEST_PARSE = False
 
 
 def find_ngrams(input_list, n):
