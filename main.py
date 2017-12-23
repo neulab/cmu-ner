@@ -280,7 +280,7 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_ipa_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
+            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
