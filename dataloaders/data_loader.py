@@ -259,9 +259,9 @@ class NER_DataLoader():
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
                 ipa_word = self.g2p(word)
                 if len(ipa_word) == 0:
-                    temp_ipa.append([self.ipa_char_to_id['<unk>']])
-                else:
-                    temp_ipa.append([self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id['<unk>'] for c in ipa_word])
+		            temp_ipa.append([self.ipa_char_to_id["<unk>"]])
+		        else:
+		            temp_ipa.append([self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id["<unk>"] for c in ipa_word])
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
@@ -320,6 +320,7 @@ class NER_DataLoader():
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
                 ipa_word = self.g2p(word)
                 if len(ipa_word) == 0:
+
                     temp_ipa.append([self.ipa_char_to_id['<unk>']])
                 else:
                     temp_ipa.append([self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id['<unk>'] for c in ipa_word])
@@ -385,9 +386,11 @@ class NER_DataLoader():
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
                 ipa_word = self.g2p(word)
-                temp_ipa.append(
-                    [self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id["<unk>"] for c in
-                     ipa_word])
+		if len(ipa_word) == 0:
+		    temp_ipa.append([self.ipa_char_to_id['<unk>']])
+		else:
+		    temp_ipa.append([self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id['<unk>'] for c in ipa_word])
+
 
             doc_ids.append(docfile.split('_')[1])
             sents.append(temp_sent)
