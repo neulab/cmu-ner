@@ -332,7 +332,7 @@ class Sep_Encoder_CRF_model(CRF_Model):
         self.args = args
         super(Sep_Encoder_CRF_model, self).__init__(args, data_loader)
         ner_tag_size = data_loader.ner_vocab_size
-        char_vocab_size = data_loader.char_vocab_size
+        char_vocab_size = data_loader.ipa_char_vocab_size
         word_vocab_size = data_loader.word_vocab_size
         word_padding_token = data_loader.word_padding_token
 
