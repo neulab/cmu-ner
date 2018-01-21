@@ -141,7 +141,7 @@ def evaluate_lr_splitHashtag(data_loader, model, model_name, score_file, setE, a
     #Putting Hashtags back
     os.system(
             "python ../scripts/fix_char_offsets.py --edl_file ../eval/%s --original_LTF_dir ../helper_files/%s/original  --split_hashtag_dir ../helper_files/%s/split_all_hashtags_v2 > ../eval/%s" % (
-                final_darpa_output_fname,args.lang, args.lang, final_output_fname))
+                final_darpa_output_fname, args.lang, args.lang, final_output_fname))
     os.system("bash %s ../eval/%s %s" % (score_file, final_output_fname, scoring_file))
 
     prec = 0
@@ -733,6 +733,8 @@ def init_config():
     parser.add_argument("--use_gazatter", default=False, action="store_true")
     parser.add_argument("--use_morph", default=False, action="store_true")
 
+    # CRF decoding
+    parser.add_argument("--interp_crf_score", default=False, action="store_true", help="if True, interpolate between the transition and emission score.")
     # post process arguments
     parser.add_argument("--label_prop", default=False, action="store_true")
     parser.add_argument("--confidence_num", default=2, type=str)

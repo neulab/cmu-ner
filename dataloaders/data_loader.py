@@ -1,10 +1,8 @@
 __author__ = 'chuntingzhou'
 import os
-
-from utils.features import *
 from utils.util import *
 
-from utils.segnerfts import orm_morph as ormnorm
+# from utils.segnerfts import orm_morph as ormnorm
 
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
@@ -235,7 +233,10 @@ class NER_DataLoader():
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
             bc_features.append(temp_bc)
-            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
+            if not self.args.isLr:
+                discrete_features.append([])
+            else:
+                discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
 
             # print len(discrete_features[-1])
 

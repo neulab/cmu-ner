@@ -28,7 +28,7 @@ def constrained_transition_init(transition_matrix, contraints):
 class chain_CRF_decoder(Decoder):
     ''' For NER and POS Tagging. '''
 
-    def __init__(self, model, src_output_dim, tag_emb_dim, tag_size, constraints=None):
+    def __init__(self, args, model, src_output_dim, tag_emb_dim, tag_size, constraints=None):
         Decoder.__init__(self, tag_size)
         self.model = model
         self.start_id = tag_size
@@ -46,28 +46,40 @@ class chain_CRF_decoder(Decoder):
         self.b_scores_readout2tag.zero()
 
         # (to, from), trans[i] is the transition score to i
-        init_transition_matrix = np.random.randn(tag_size, tag_size)
-        init_transition_matrix[self.start_id, :] = -1000.0
-        init_transition_matrix[:, self.end_id] = -1000.0
+        init_transition_matrix = np.random.randn(tag_size, tag_size) # from, to
+        # init_transition_matrix[self.start_id, :] = -1000.0
+        # init_transition_matrix[:, self.end_id] = -1000.0
+        init_transition_matrix[self.end_id, :] = -1000.0
+        init_transition_matrix[:, self.start_id] = -1000.0
         if constraints is not None:
             init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
         # print init_transition_matrix
         self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
                                                              init=dy.NumpyInitializer(init_transition_matrix))
 
-    def forward_alg(self, tag_scores, batch_size):
+        self.interpolation = args.interp_crf_score
+        if self.interpolation:
+            self.W_weight_transition = model.add_parameters((1, tag_emb_dim))
+            self.b_weight_transition = model.add_parameters((1))
+            self.b_weight_transition.zero()
+
+    def forward_alg(self, tag_scores):
         ''' Forward DP for CRF.
         tag_scores (list of batched dy.Tensor): (tag_size, batchsize)
         '''
         # Be aware: if a is lookup_parameter with 2 dimension, then a[i] returns one row;
         # if b = dy.parameter(a), then b[i] returns one column; which means dy.parameter(a) already transpose a
         transpose_transition_score = dy.parameter(self.transition_matrix)
-        # transpose_transition_score = dy.transpose(transition_score)  # (from, to)
+        # transpose_transition_score = dy.transpose(transition_score)
         # alpha(t', s) = the score of sequence from t=0 to t=t' in log space
         # np_init_alphas = -100.0 * np.ones((self.tag_size, batch_size))
         # np_init_alphas[self.start_id, :] = 0.0
         # alpha_tm1 = dy.inputTensor(np_init_alphas, batched=True)
+
         alpha_tm1 = transpose_transition_score[self.start_id] + tag_scores[0]
+        # self.transition_matrix[i]: from i, column
+        # transpose_score[i]: to i, row
+        # transpose_score: to, from
 
         for tag_score in tag_scores[1:]:
             # extend for each transit <to>
@@ -113,10 +125,15 @@ class chain_CRF_decoder(Decoder):
 
         tag_embs = [dy.tanh(dy.affine_transform([b_src2tag_readout, W_src2tag_readout, src_encoding])) for src_encoding
                     in src_encodings]
+        if self.interpolation:
+            W_transit = dy.parameter(self.W_weight_transition)
+            b_transit = dy.parameter(self.b_weight_transition)
+            step_weight_on_transit = [dy.logistic(dy.affine_transform([b_transit, W_transit, tag_emb])) for tag_emb in tag_embs]
+
         tag_scores = [dy.affine_transform([b_score_tag, W_score_tag, tag_emb]) for tag_emb in tag_embs]
 
         # scores over all paths, all scores are in log-space
-        forward_scores = self.forward_alg(tag_scores, batch_size)
+        forward_scores = self.forward_alg(tag_scores)
         gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
         # negative log likelihood
         loss = dy.sum_batches(forward_scores - gold_score) / batch_size
