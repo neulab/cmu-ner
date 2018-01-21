@@ -8,3 +8,5 @@
 datasets/embedding/
 maxma/
 eval/
+
+!utils/orm_norm/*.txt

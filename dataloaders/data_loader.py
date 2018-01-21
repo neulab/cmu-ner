@@ -379,6 +379,7 @@ class Dataloader_Combine():
     def __init__(self, args, normal_vocab, lower_vocab, char_to_id, brown_cluster_dicts=None, lower_brown_dicts=None):
         self.word_to_id = normal_vocab
         self.lower_word_to_id = lower_vocab
+	self.args = args
 
         self.char_to_id = char_to_id
         self.brown_cluster_dicts = brown_cluster_dicts
