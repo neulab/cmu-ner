@@ -82,6 +82,8 @@ class NER_DataLoader():
         self.word_vocab_size = len(self.id_to_word)
         self.char_vocab_size = len(self.id_to_char)
 
+	self.B_UNK = self.ner_vocab_size + 1
+	self.I_UNK = self.ner_vocab_size + 1
         print "Size of vocab after: ", len(self.word_to_id)
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
 
@@ -206,12 +208,14 @@ class NER_DataLoader():
         tgt_tags = []
         discrete_features = []
         bc_features = []
+	known_tags = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_ner = []
             temp_char = []
             temp_bc = []
+	    temp_known_tag = []
             for w in one_sent:
                 fields = w.split()
                 word = fields[0]
@@ -227,12 +231,17 @@ class NER_DataLoader():
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 temp_ner.append(self.tag_to_id[ner_tag])
+		if "UNK" in ner_tag:
+		    temp_known_tag.append([0])
+		else:
+		    temp_known_tag.append([1])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
 
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
             bc_features.append(temp_bc)
+	    known_tags.append(temp_known_tag)
             if not self.args.isLr:
                 discrete_features.append([])
             else:
@@ -261,7 +270,7 @@ class NER_DataLoader():
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
-        return sents, char_sents, tgt_tags, discrete_features, bc_features
+        return sents, char_sents, tgt_tags, discrete_features, bc_features, known_tags
 
     def get_lr_test(self, path, lang):
         # setE.txt

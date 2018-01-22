@@ -23,6 +23,10 @@ class CRF_Model(object):
         else:
             self.constraints = None
         # print self.constraints
+	self.use_partial = args.use_partial
+	self.tag_to_id = tag_to_id
+	self.B_UNK = data_loader.B_UNK
+	self.I_UNK = data_loader.I_UNK
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
@@ -42,9 +46,9 @@ class CRF_Model(object):
         else:
             print('Load from path not provided!')
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
+    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, known_tags, training=True):
         birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
+        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, self.use_partial, known_tags, self.tag_to_id)
         return crf_loss#, sum_s, sent_s
 
     def eval(self, sents, char_sents, feats, bc_feats, training=False):

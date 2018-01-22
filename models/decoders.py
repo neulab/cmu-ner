@@ -107,7 +107,7 @@ class chain_CRF_decoder(Decoder):
         score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, [self.end_id]*batch_size), tags[-1])
         return score
 
-    def decode_loss(self, src_encodings, tgt_tags):
+    def decode_loss(self, src_encodings, tgt_tags,use_partial, known_tags, tag_to_id):
         # This is the batched version which requires bucketed batch input with the same length.
         '''
         The length of src_encodings and tgt_tags are time_steps.
@@ -118,6 +118,7 @@ class chain_CRF_decoder(Decoder):
         # TODO: transpose tgt tags first
         batch_size = len(tgt_tags)
         tgt_tags, tgt_mask = transpose_input(tgt_tags, 0)
+	known_tags, _ = transpose_input(known_tags, 0)
         W_src2tag_readout = dy.parameter(self.W_src2tag_readout)
         b_src2tag_readout = dy.parameter(self.b_src2tag_readout)
         W_score_tag = dy.parameter(self.W_scores_readout2tag)
@@ -134,10 +135,47 @@ class chain_CRF_decoder(Decoder):
 
         # scores over all paths, all scores are in log-space
         forward_scores = self.forward_alg(tag_scores)
-        gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
+	if use_partial:
+	    gold_score = self.score_one_sequence_partial(tag_scores, tgt_tags, batch_size,known_tags, tag_to_id)
+	else:
+	    gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
         # negative log likelihood
         loss = dy.sum_batches(forward_scores - gold_score) / batch_size
         return loss #, dy.sum_batches(forward_scores)/batch_size, dy.sum_batches(gold_score) / batch_size
+    
+    def makeMask(self, batch_size, known_tags, tag_to_id, tags, index):
+	mask_w_0 = np.array([[-1000] * self.tag_size])
+	mask_w_0 = np.transpose(mask_w_0)
+	mask_w_0_all_s  = np.reshape(np.array([mask_w_0] * batch_size), (self.tag_size,batch_size))
+
+	mask_idx = []
+	tag_vals = []
+	for idx, w0_si in enumerate(known_tags[index]):
+	    if w0_si[0] == 1:
+		mask_idx.append(idx)
+		tag_vals.append(tags[index][idx])
+	mask_w_0_all_s[tag_vals,  mask_idx] = 0
+	return mask_w_0_all_s
+
+    def score_one_sequence_partial(self, tag_scores, tags, batch_size, known_tags, tag_to_id):
+	transpose_transition_score = dy.parameter(self.transition_matrix)
+	alpha_tm1 = transpose_transition_score[self.start_id] + tag_scores[0]
+
+	mask_w_0_all_s = self.makeMask(batch_size, known_tags, tag_to_id, tags, 0)
+	i = 1
+	alpha_tm1 = alpha_tm1 + dy.inputTensor(mask_w_0_all_s, batched=True)
+	for tag_score in tag_scores[1:]:
+	    alpha_tm1 = dy.concatenate_cols([alpha_tm1] * self.tag_size)  # (from, to, batch_size)
+	    tag_score = dy.transpose(dy.concatenate_cols([tag_score] * self.tag_size))
+	    alpha_t = alpha_tm1 + transpose_transition_score + tag_score
+	    alpha_tm1 = log_sum_exp_dim_0(alpha_t)  # (tag_size, batch_size)
+	    mask_w_i_all_s = self.makeMask(batch_size, known_tags, tag_to_id,tags, i)
+	    alpha_tm1 = alpha_tm1 + dy.inputTensor(mask_w_i_all_s, batched=True)
+	    i = i + 1
+	
+	terminal_alpha = log_sum_exp_dim_0(alpha_tm1 + self.transition_matrix[self.end_id])  # (1, batch_size)
+	return terminal_alpha
+
 
     def get_crf_scores(self, src_encodings):
         W_src2tag_readout = dy.parameter(self.W_src2tag_readout)

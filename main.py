@@ -3,7 +3,7 @@ __author__ = 'chuntingzhou'
 
 def evaluate(data_loader, path, model, model_name):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
-    sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
+    sents, char_sents, tgt_tags, discrete_features, bc_feats, known_tags = data_loader.get_data_set(path, args.lang)
 
     prefix = model_name + "_" + str(uid)
     # tot_acc = 0.0
@@ -213,11 +213,11 @@ def main(args):
     print ner_data_loader.id_to_tag
 
     if not args.data_aug:
-        sents, char_sents, tgt_tags, discrete_features, bc_features = ner_data_loader.get_data_set(args.train_path, args.lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features, known_tags = ner_data_loader.get_data_set(args.train_path, args.lang)
     else:
-        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
-        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
-        sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug
+        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt, known_tags_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
+        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug, known_tags_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug, known_tags_tgt+known_tags_aug
 
     data_test = ner_data_loader.get_lr_test(args.test_path, args.lang)
     if not args.valid_on_full:
@@ -271,8 +271,8 @@ def main(args):
     valid_history = []
     best_results = [0.0, 0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
-        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats in make_bucket_batches(
-                zip(sents, char_sents, tgt_tags, discrete_features, bc_features), batch_size):
+        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, b_known_tags in make_bucket_batches(
+                zip(sents, char_sents, tgt_tags, discrete_features, bc_features, known_tags), batch_size):
             dy.renew_cg()
 
             if args.replace_unk_rate > 0.0:
@@ -280,7 +280,7 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
+            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats,b_known_tags, training=True)
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
@@ -741,6 +741,9 @@ def init_config():
     parser.add_argument("--author_file", default=None, type=str)
     parser.add_argument("--lookup_file", default=None, type=str)
     parser.add_argument("--freq_ngram", default=20, type=int)
+
+    #Partial CRF
+    parser.add_argument("--use_partial", default=False, action="store_true")
 
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--valid_on_full", default=False, action="store_true")
