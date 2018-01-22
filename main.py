@@ -1,18 +1,18 @@
 __author__ = 'chuntingzhou'
 
 
-def evaluate(data_loader, path, model, model_name):
+def evaluate(data_loader, path, model, model_name, data):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
-    sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents = data_loader.get_data_set(path, args.lang)
+    sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents, known_tags = data_loader.get_data_set(path, args.lang)
 
     prefix = model_name + "_" + str(uid)
     # tot_acc = 0.0
     predictions = []
     gold_standards = []
     i = 0
-    for sent, char_sent, tgt_tag, discrete_feature, bc_feat, ipa_sent in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents):
+    for sent, char_sent, tgt_tag, discrete_feature, bc_feat, ipa_sent,known_tag in zip(sents, char_sents, tgt_tags, discrete_features, bc_feats, ipa_sents, known_tags):
         dy.renew_cg()
-        sent, char_sent, discrete_feature, bc_feat, ipa_sent = [sent], [char_sent], [discrete_feature], [bc_feat], [ipa_sent]
+        sent, char_sent, discrete_feature, bc_feat, ipa_sent, known_tag = [sent], [char_sent], [discrete_feature], [bc_feat], [ipa_sent], [known_tag]
         best_score, best_path = model.eval(sent, ipa_sent, discrete_feature, bc_feat, training=False)
 
         assert len(best_path) == len(tgt_tag)
@@ -25,7 +25,7 @@ def evaluate(data_loader, path, model, model_name):
         if i % 1000 == 0:
             print "Testing processed %d lines " % i
 
-    pred_output_fname = "../eval/%s_pred_output.txt" % (prefix)
+    pred_output_fname = "/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/%s_pred_output.txt" % (prefix)
     eval_output_fname = "%s_eval_score.txt" % (prefix)
     with open(pred_output_fname, "w") as fout:
         for pred, gold in zip(predictions, gold_standards):
@@ -33,7 +33,7 @@ def evaluate(data_loader, path, model, model_name):
                 fout.write("XXX " + data_loader.id_to_tag[g] + " " + data_loader.id_to_tag[p] + "\n")
             fout.write("\n")
 
-    os.system("../eval/conlleval.v2 < %s > %s" % (pred_output_fname, eval_output_fname))
+    os.system("/Users/aditichaudhary/Documents/CMU/Lorelei/LORELEI_NER/eval/conlleval.v2 < %s > %s" % (pred_output_fname, eval_output_fname))
 
     with open(eval_output_fname, "r") as fin:
         lid = 0
@@ -213,13 +213,17 @@ def main(args):
     print ner_data_loader.id_to_tag
 
     if not args.data_aug:
-        sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents = ner_data_loader.get_data_set(args.train_path, args.lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents, known_tags = ner_data_loader.get_data_set(args.train_path, args.lang)
     else:
-        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt,ipa_sents_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
-        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug,ipa_sents_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
-        sents, char_sents, tgt_tags, discrete_features, bc_features,ipa_sents = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug, ipa_sents_tgt + ipa_sents_aug
+        sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt,ipa_sents_tgt, known_tags_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
+        sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug,ipa_sents_aug, known_tags_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features,ipa_sents, known_tags = sents_tgt+sents_aug, char_sents_tgt+char_sents_aug, tags_tgt+tags_aug, dfs_tgt+dfs_aug, bc_feats_tgt+bc_feats_aug, ipa_sents_tgt + ipa_sents_aug, known_tags_tgt + known_tags_aug
 
-    data_test = ner_data_loader.get_lr_test(args.test_path, args.lang)
+    if args.isLr:
+        data_test = ner_data_loader.get_lr_test(args.test_path, args.lang)
+    else:
+        data_test = ner_data_loader.get_test_data(args.test_path, args.lang)
+
     if not args.valid_on_full:
         data_valid = ner_data_loader.get_lr_test(args.dev_path, args.lang)
     else:
@@ -230,7 +234,7 @@ def main(args):
     epoch = bad_counter = updates = tot_example = cum_loss = 0
     patience = 30
 
-    display_freq = 100
+    display_freq = 500
     valid_freq = args.valid_freq
     batch_size = args.batch_size
 
@@ -271,8 +275,8 @@ def main(args):
     valid_history = []
     best_results = [0.0, 0.0, 0.0, 0.0]
     while epoch <= args.tot_epochs:
-        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, b_ipa_char_sents in make_bucket_batches(
-                zip(sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents), batch_size):
+        for b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, b_ipa_char_sents,b_known_tags in make_bucket_batches(
+                zip(sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents, known_tags), batch_size):
             dy.renew_cg()
 
             if args.replace_unk_rate > 0.0:
@@ -280,7 +284,7 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, training=True)
+            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats, b_known_tags,  training=True)
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
@@ -297,7 +301,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name, data_valid)
                 else:
                     if args.valid_on_full:
                         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
@@ -737,6 +741,7 @@ def init_config():
 
     parser.add_argument("--isLr", default=False, action="store_true")
     parser.add_argument("--use_ipa", default=False, action="store_true")
+    parser.add_argument("--use_partial", default=False, action="store_true")
     parser.add_argument("--valid_on_full", default=False, action="store_true")
     parser.add_argument("--valid_using_split", default=False, action="store_true")
     parser.add_argument("--setEconll", type=str, default=None, help="path to the full setE conll file")

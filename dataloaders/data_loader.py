@@ -98,6 +98,9 @@ class NER_DataLoader():
         self.char_vocab_size = len(self.id_to_char)
         self.ipa_char_vocab_size = len(self.id_to_char_ipa)
 
+        self.B_UNK = self.ner_vocab_size + 1
+        self.I_UNK = self.ner_vocab_size + 2
+
         print "Size of vocab after: ", len(self.word_to_id)
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d, IPA Char Vocab Size=%d" % (
         self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size, self.ipa_char_vocab_size))
@@ -113,7 +116,8 @@ class NER_DataLoader():
             ner_tag = fields[-1]
             for c in word:
                 char_set.add(c)
-            tag_set.add(ner_tag)
+            if "UNK" not in ner_tag:
+                tag_set.add(ner_tag)
             ipa_word = self.g2p(word)
             for c in ipa_word:
                 ipa_char_set.add(c)
@@ -234,6 +238,7 @@ class NER_DataLoader():
         discrete_features = []
         bc_features = []
         ipa_sents = []
+        known_tags = []
 
         def add_sent(one_sent):
             temp_sent = []
@@ -241,6 +246,7 @@ class NER_DataLoader():
             temp_char = []
             temp_bc = []
             temp_ipa  = []
+            temp_known_tag = []
             for w in one_sent:
                 fields = w.split()
                 word = fields[0]
@@ -255,7 +261,16 @@ class NER_DataLoader():
                     #word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
-                temp_ner.append(self.tag_to_id[ner_tag])
+                if "B-UNK" in ner_tag:
+                    temp_ner.append(self.B_UNK)
+                elif "I-UNK" in ner_tag:
+                    temp_ner.append(self.I_UNK)
+                else:
+                    temp_ner.append(self.tag_to_id[ner_tag])
+                if "UNK" in ner_tag:
+                    temp_known_tag.append([0])
+                else:
+                    temp_known_tag.append([1])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
                 ipa_word = self.g2p(word)
                 if len(ipa_word) == 0:
@@ -269,6 +284,7 @@ class NER_DataLoader():
             bc_features.append(temp_bc)
             discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
             ipa_sents.append(temp_ipa)
+            known_tags.append(temp_known_tag)
 
             # print len(discrete_features[-1])
 
@@ -293,7 +309,7 @@ class NER_DataLoader():
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
-        return sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents
+        return sents, char_sents, tgt_tags, discrete_features, bc_features, ipa_sents, known_tags
 
     def get_lr_test(self, path, lang):
         # setE.txt
@@ -424,6 +440,71 @@ class NER_DataLoader():
             self.num_feats = 0
 
         return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids, ipa_sents
+
+    def get_test_data(self, path, lang):
+        sents = []
+        char_sents = []
+        discrete_features = []
+        bc_features = []
+        original_sents = []
+        ipa_sents = []
+
+        def add_sent(one_sent):
+            temp_sent = []
+            temp_char = []
+            temp_bc = []
+            temp_ori_sent = []
+            temp_ipa = []
+            for w in one_sent:
+                tokens = w.split('\t')
+                word = tokens[0]
+                temp_ori_sent.append(word)
+                if self.use_brown_cluster:
+                    temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else
+                                   self.brown_cluster_dicts["<unk>"])
+
+                temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
+                temp_char.append(
+                    [self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
+                ipa_word = self.g2p(word)
+                if len(ipa_word) == 0:
+                    temp_ipa.append([self.ipa_char_to_id['<unk>']])
+                else:
+                    temp_ipa.append(
+                        [self.ipa_char_to_id[c] if c in self.ipa_char_to_id else self.ipa_char_to_id['<unk>'] for c in
+                         ipa_word])
+
+            sents.append(temp_sent)
+            char_sents.append(temp_char)
+            bc_features.append(temp_bc)
+            discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
+            original_sents.append(temp_ori_sent)
+            ipa_sents.append(temp_ipa)
+            # print len(discrete_features[-1])
+
+        with codecs.open(path, "r", "utf-8") as fin:
+            i = 0
+            one_sent = []
+            for line in fin:
+                if line.strip() == "":
+                    if len(one_sent) > 0:
+                        add_sent(one_sent)
+                    one_sent = []
+                else:
+                    one_sent.append(line.strip())
+                i += 1
+                if i % 1000 == 0:
+                    print("Processed %d testing data." % (i,))
+
+            if len(one_sent) > 0:
+                add_sent(one_sent)
+
+        if self.use_discrete_feature:
+            self.num_feats = len(discrete_features[0][0])
+        else:
+            self.num_feats = 0
+
+        return sents, char_sents, discrete_features, bc_features, original_sents, ipa_sents
 
 
 class Dataloader_Combine():

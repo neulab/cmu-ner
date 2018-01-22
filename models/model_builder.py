@@ -10,17 +10,22 @@ class CRF_Model(object):
         self.save_to = args.save_to_path
         self.load_from = args.load_from_path
         tag_to_id = data_loader.tag_to_id
-        self.constraints = [[[tag_to_id["B-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["B-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["B-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["B-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]],
-                            [[tag_to_id["O"]] * 4, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"], tag_to_id["I-GPE"]]],
-                            [[tag_to_id["I-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["I-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["I-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
-                            [[tag_to_id["I-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]]]
+        self.constraints = None
+        # self.constraints = [[[tag_to_id["B-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["B-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["B-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["B-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]],
+        #                     [[tag_to_id["O"]] * 4, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"], tag_to_id["I-GPE"]]],
+        #                     [[tag_to_id["I-GPE"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["I-ORG"]] * 3, [tag_to_id["I-GPE"], tag_to_id["I-PER"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["I-PER"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-GPE"], tag_to_id["I-LOC"]]],
+        #                     [[tag_to_id["I-LOC"]] * 3, [tag_to_id["I-ORG"], tag_to_id["I-PER"], tag_to_id["I-GPE"]]]]
 
         # print self.constraints
+        self.use_partial = args.use_partial
+        self.tag_to_id = tag_to_id
+        self.B_UNK = data_loader.B_UNK
+        self.I_UNK = data_loader.I_UNK
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
@@ -40,9 +45,9 @@ class CRF_Model(object):
         else:
             print('Load from path not provided!')
 
-    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, training=True):
+    def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, known_tags, training=True):
         birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags)
+        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, known_tags, self.use_partial, self.tag_to_id, self.B_UNK, self.I_UNK)
         return crf_loss#, sum_s, sent_s
 
     def eval(self, sents, char_sents, feats, bc_feats, training=False):
@@ -402,7 +407,9 @@ class Sep_Encoder_CRF_model(CRF_Model):
                                            vocab_size=0)
 
         # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
-        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
+        #self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
+        self.crf_decoder = chain_CRF_decoder(self.model, src_ctx_dim, tag_emb_dim, ner_tag_size,
+                                             constraints=None)
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         char_embs_birnn = self.char_birnn_encoder.encode(char_sents, training=training, char=True)
