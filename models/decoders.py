@@ -107,7 +107,7 @@ class chain_CRF_decoder(Decoder):
         score += dy.pick_batch(dy.lookup_batch(self.transition_matrix, [self.end_id]*batch_size), tags[-1])
         return score
 
-    def decode_loss(self, src_encodings, tgt_tags,use_partial, known_tags, tag_to_id):
+    def decode_loss(self, src_encodings, tgt_tags,use_partial, known_tags, tag_to_id, B_UNK, I_UNK):
         # This is the batched version which requires bucketed batch input with the same length.
         '''
         The length of src_encodings and tgt_tags are time_steps.
@@ -136,14 +136,14 @@ class chain_CRF_decoder(Decoder):
         # scores over all paths, all scores are in log-space
         forward_scores = self.forward_alg(tag_scores)
 	if use_partial:
-	    gold_score = self.score_one_sequence_partial(tag_scores, tgt_tags, batch_size,known_tags, tag_to_id)
+	    gold_score = self.score_one_sequence_partial(tag_scores, tgt_tags, batch_size,known_tags, tag_to_id, B_UNK, I_UNK)
 	else:
 	    gold_score = self.score_one_sequence(tag_scores, tgt_tags, batch_size)
         # negative log likelihood
         loss = dy.sum_batches(forward_scores - gold_score) / batch_size
         return loss #, dy.sum_batches(forward_scores)/batch_size, dy.sum_batches(gold_score) / batch_size
     
-    def makeMask(self, batch_size, known_tags, tag_to_id, tags, index):
+    def makeMask(self, batch_size, known_tags, tag_to_id, tags, index, B_UNK, I_UNK):
 	mask_w_0 = np.array([[-1000] * self.tag_size])
 	mask_w_0 = np.transpose(mask_w_0)
 	mask_w_0_all_s  = np.reshape(np.array([mask_w_0] * batch_size), (self.tag_size,batch_size))
@@ -154,14 +154,23 @@ class chain_CRF_decoder(Decoder):
 	    if w0_si[0] == 1:
 		mask_idx.append(idx)
 		tag_vals.append(tags[index][idx])
+	    else:
+		if tags[index][idx] == B_UNK:
+		    possible_labels = ["B-LOC", "B-PER", "B-ORG", "B-GPE", "O"]
+		elif tags[index][idx] == I_UNK:
+		    possible_labels = ["I-LOC", "I-PER", "I-ORG", "I-GPE", "O"]
+
+		for pl in possible_labels:
+		    mask_idx.append(idx)
+		    tag_vals.append(tag_to_id[pl])
 	mask_w_0_all_s[tag_vals,  mask_idx] = 0
 	return mask_w_0_all_s
 
-    def score_one_sequence_partial(self, tag_scores, tags, batch_size, known_tags, tag_to_id):
+    def score_one_sequence_partial(self, tag_scores, tags, batch_size, known_tags, tag_to_id, B_UNK, I_UNK):
 	transpose_transition_score = dy.parameter(self.transition_matrix)
 	alpha_tm1 = transpose_transition_score[self.start_id] + tag_scores[0]
 
-	mask_w_0_all_s = self.makeMask(batch_size, known_tags, tag_to_id, tags, 0)
+	mask_w_0_all_s = self.makeMask(batch_size, known_tags, tag_to_id, tags, 0, B_UNK, I_UNK)
 	i = 1
 	alpha_tm1 = alpha_tm1 + dy.inputTensor(mask_w_0_all_s, batched=True)
 	for tag_score in tag_scores[1:]:
@@ -169,7 +178,7 @@ class chain_CRF_decoder(Decoder):
 	    tag_score = dy.transpose(dy.concatenate_cols([tag_score] * self.tag_size))
 	    alpha_t = alpha_tm1 + transpose_transition_score + tag_score
 	    alpha_tm1 = log_sum_exp_dim_0(alpha_t)  # (tag_size, batch_size)
-	    mask_w_i_all_s = self.makeMask(batch_size, known_tags, tag_to_id,tags, i)
+	    mask_w_i_all_s = self.makeMask(batch_size, known_tags, tag_to_id,tags, i,B_UNK, I_UNK)
 	    alpha_tm1 = alpha_tm1 + dy.inputTensor(mask_w_i_all_s, batched=True)
 	    i = i + 1
 	

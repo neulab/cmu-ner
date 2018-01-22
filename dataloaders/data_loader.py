@@ -98,7 +98,8 @@ class NER_DataLoader():
             ner_tag = fields[-1]
             for c in word:
                 char_set.add(c)
-            tag_set.add(ner_tag)
+            if "UNK" not in ner_tag:
+		tag_set.add(ner_tag)
             if self.orm_lower:
                 word = word.lower()
             if self.orm_norm:
@@ -230,7 +231,13 @@ class NER_DataLoader():
                     #word = orm_morph.best_parse(word) # Not sure whether it would be better adding this line behind or after temp_char
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
-                temp_ner.append(self.tag_to_id[ner_tag])
+                
+		if "B-UNK" in ner_tag:
+		    temp_ner.append(self.B_UNK)
+		elif "I-UNK" in ner_tag:
+		    temp_ner.append(self.I_UNK)
+		else:
+		    temp_ner.append(self.tag_to_id[ner_tag])
 		if "UNK" in ner_tag:
 		    temp_known_tag.append([0])
 		else:
