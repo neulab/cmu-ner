@@ -34,6 +34,7 @@ class CRF_Model(object):
     def save(self):
         if self.save_to is not None:
             self.model.save(self.save_to)
+	    print("Saved model: " + self.save_to)
         else:
             print('Save to path not provided!')
 
