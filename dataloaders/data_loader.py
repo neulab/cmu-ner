@@ -1,8 +1,8 @@
 __author__ = 'chuntingzhou'
 import os
 from utils.util import *
-
-# from utils.segnerfts import orm_morph as ormnorm
+from utils.features import *
+from utils.segnerfts import orm_morph as ormnorm
 
 class NER_DataLoader():
     def __init__(self, args, special_normal=False):
