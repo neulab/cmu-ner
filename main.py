@@ -1,7 +1,7 @@
 __author__ = 'chuntingzhou'
 
 
-def evaluate(data_loader, path, model, model_name):
+def evaluate(data_loader, path, model, model_name, isTest):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats, known_tags = data_loader.get_data_set(path, args.lang)
 
@@ -49,7 +49,8 @@ def evaluate(data_loader, path, model, model_name):
     output = open(eval_output_fname, "r").read().strip()
     print output
     os.system("rm %s" % (eval_output_fname,))
-    os.system("rm %s" % (pred_output_fname,))
+    if not isTest:
+	os.system("rm %s" % (pred_output_fname,))
 
     return acc, precision, recall, f1
 
@@ -192,7 +193,7 @@ def evaluate_test(ner_data_loader, path, model_name):
 	raise NotImplementedError
     
     model.load()
-    acc, precision, recall, f1 = evaluate(ner_data_loader, path, model, model_name)
+    acc, precision, recall, f1 = evaluate(ner_data_loader, path, model, model_name, True)
     return acc, precision, recall, f1
 
 
@@ -321,7 +322,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.dev_path, model, args.model_name)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.dev_path, model, args.model_name, False)
                 else:
                     if args.valid_on_full:
                         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
