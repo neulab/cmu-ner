@@ -334,7 +334,7 @@ def main(args):
                 if len(valid_history) == 0 or f1 > max(valid_history):
                     bad_counter = 0
                     best_results = [acc, precision, recall, f1]
-                    if updates > 2000:
+                    if updates > 1000:
                         print("Saving the best model so far.......")
                         model.save()
                     if args.isLr:
