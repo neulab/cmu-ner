@@ -297,7 +297,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.dev_path, model, args.model_name)
                 else:
                     if args.valid_on_full:
                         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
@@ -332,23 +332,34 @@ def main(args):
                 # if decay_num > decay_patience:
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
-                    #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
-                    results = [acc, precision, recall, f1]
-                    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+                    if args.isLr:
+			#Test on full SetE
+			acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
+			results = [acc, precision, recall, f1]
+			print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
-                    # post processing
-                    post_process(args, best_output_fname)
-                    exit(0)
+			# post processing
+			post_process(args, best_output_fname)
+			exit(0)
+		    else:
+			acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
+			results = [acc, precision, recall, f1]
+			print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+			exit(0)
                 valid_history.append(f1)
         epoch += 1
 
+    if args.isLr:
      # Test on full SetE
-    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
-    results = [acc, precision, recall, f1]
-    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
-    # post processing
-    post_process(args, best_output_fname)
+	acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
+	results = [acc, precision, recall, f1]
+	print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+	# post processing
+	post_process(args, best_output_fname)
+    else:
+	acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
+	results = [acc, precision, recall, f1]
+	print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
     print("All Epochs done.")
     #print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
