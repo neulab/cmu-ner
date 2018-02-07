@@ -513,6 +513,28 @@ def test_with_two_models(args):
 
     post_process(args, final_darpa_output_fname)
 
+def evaluate_test_model(args):
+    ner_data_loader = NER_DataLoader(args)
+    _, _, _, _, _ = ner_data_loader.get_data_set(args.train_path, args.lang)
+    if args.model_arc == "char_cnn":
+	print "Using Char CNN model!"
+	model = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+	print "Using Char Birnn model!"
+	model = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+	print "Using Char Birnn-CNN model!"
+	model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+	print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+	model = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+	print "Using seperate encoders for embedding and features (cnn char)!"
+	model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+	raise NotImplementedError
+    evaluate_test(ner_data_loader, args.test_path, args.model_name)
+
 
 def test_single_model(args):
     ner_data_loader = NER_DataLoader(args)
@@ -833,7 +855,10 @@ if __name__ == "__main__":
         args.load_from_path = args.save_to_path
         main(args)
     elif args.mode == "test_1":
-        test_single_model(args)
+        if args.isLr:
+	    test_single_model(args)
+	else:
+	    evaluate_test_model(args)
     elif args.mode == "test_2":
         test_with_two_models(args)
     elif args.mode == "ensemble":
