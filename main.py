@@ -836,6 +836,8 @@ if __name__ == "__main__":
     # args = init_config()
     if args.mode == "train":
         args.load_from_path = args.save_to_path
+	print "partial_crf"
+	exit(0)
         main(args)
     elif args.mode == "test_1":
         test_single_model(args)
