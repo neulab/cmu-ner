@@ -1,7 +1,7 @@
 __author__ = 'chuntingzhou'
 
 
-def evaluate(data_loader, path, model, model_name):
+def evaluate(data_loader, path, model, model_name,isTest):
     # Warning: to use this function, the input should be setE.bio.conll that is consistent with the conll format
     sents, char_sents, tgt_tags, discrete_features, bc_feats = data_loader.get_data_set(path, args.lang)
 
@@ -49,7 +49,8 @@ def evaluate(data_loader, path, model, model_name):
     output = open(eval_output_fname, "r").read().strip()
     print output
     os.system("rm %s" % (eval_output_fname,))
-    os.system("rm %s" % (pred_output_fname,))
+    if not isTest:
+	os.system("rm %s" % (pred_output_fname,))
 
     return acc, precision, recall, f1
 
@@ -171,6 +172,28 @@ def replace_singletons(data_loader, sents, replace_rate):
         new_batch_sents.append(new_sent)
     return new_batch_sents
 
+
+def evaluate_test(ner_data_loader, path, model_name):
+    if args.model_arc == "char_cnn":
+	print "Using Char CNN model!"
+	model = vanilla_NER_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn":
+	print "Using Char Birnn model!"
+	model = BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "char_birnn_cnn":
+	print "Using Char Birnn-CNN model!"
+	model = CNN_BiRNN_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep":
+	print "Using seperate encoders for embedding and features (cnn and birnn char)!"
+	model = Sep_Encoder_CRF_model(args, ner_data_loader)
+    elif args.model_arc == "sep_cnn_only":
+	print "Using seperate encoders for embedding and features (cnn char)!"
+	model = Sep_CNN_Encoder_CRF_model(args, ner_data_loader)
+    else:
+	raise NotImplementedError
+    model.load()
+    acc, precision, recall, f1 = evaluate(ner_data_loader, path, model, model_name, True)
+    return acc, precision, recall, f1
 
 def test_on_full_setE(ner_data_loader, args, data):
 
@@ -297,7 +320,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_namei,False)
                 else:
                     if args.valid_on_full:
                         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
@@ -333,23 +356,32 @@ def main(args):
                     print("Early stop!")
                     print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
                     #Test on full SetE
-                    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
-                    results = [acc, precision, recall, f1]
-                    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+                    if args.isLr:
+			acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
+			results = [acc, precision, recall, f1]
+			print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
-                    # post processing
-                    post_process(args, best_output_fname)
-                    exit(0)
+			# post processing
+			post_process(args, best_output_fname)
+		    else:
+			acc,precision,recall, f1 = evaluate_test(ner_data_loader, args.test_path, args.model_name)
+			results = [acc, precision, recall, f1]
+			print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+			exit(0)
                 valid_history.append(f1)
         epoch += 1
 
-     # Test on full SetE
-    acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
-    results = [acc, precision, recall, f1]
-    print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
-    # post processing
-    post_process(args, best_output_fname)
-
+    # Test on full SetE
+    if args.isLr:
+	acc, precision, recall, f1 = test_on_full_setE(ner_data_loader, args, data_test)
+	results = [acc, precision, recall, f1]
+	print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
+	# post processing
+	post_process(args, best_output_fname)
+    else:
+	acc,precision,recall, f1 = evaluate_test(ner_data_loader, args.test_path, args.model_name)
+	results = [acc, precision, recall, f1]
+	print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
     print("All Epochs done.")
     #print("Best on validation: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(best_results))
 
