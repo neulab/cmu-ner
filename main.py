@@ -320,7 +320,7 @@ def main(args):
                 print("Epoch = %d, Updates = %d, CRF Loss=%f, Accumulative Loss=%f." % (epoch, updates, loss_val, cum_loss*1.0/tot_example))
             if updates % valid_freq == 0:
                 if not args.isLr:
-                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_namei,False)
+                    acc, precision, recall, f1 = evaluate(ner_data_loader, args.test_path, model, args.model_name,False)
                 else:
                     if args.valid_on_full:
                         acc, precision, recall, f1 = evaluate_lr(ner_data_loader, model, args.model_name, args.score_file, args.setEconll, data_valid)
