@@ -82,8 +82,10 @@ class NER_DataLoader():
         self.word_vocab_size = len(self.id_to_word)
         self.char_vocab_size = len(self.id_to_char)
 
-	self.B_UNK = self.ner_vocab_size + 1
-	self.I_UNK = self.ner_vocab_size + 1
+        self.UNK = self.ner_vocab_size + 1
+        #self.B_UNK = self.ner_vocab_size + 1
+        #self.I_UNK = self.ner_vocab_size + 1
+
         print "Size of vocab after: ", len(self.word_to_id)
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
 
@@ -232,10 +234,10 @@ class NER_DataLoader():
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 
-		if "B-UNK" in ner_tag:
-		    temp_ner.append(self.B_UNK)
-		elif "I-UNK" in ner_tag:
-		    temp_ner.append(self.I_UNK)
+		if "UNK" in ner_tag:
+		    temp_ner.append(self.UNK)
+		#elif "I-UNK" in ner_tag:
+		 #   temp_ner.append(self.I_UNK)
 		else:
 		    temp_ner.append(self.tag_to_id[ner_tag])
 		if "UNK" in ner_tag:

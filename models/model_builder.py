@@ -25,8 +25,9 @@ class CRF_Model(object):
         # print self.constraints
 	self.use_partial = args.use_partial
 	self.tag_to_id = tag_to_id
-	self.B_UNK = data_loader.B_UNK
-	self.I_UNK = data_loader.I_UNK
+        self.UNK = data_loader.UNK
+	#self.B_UNK = data_loader.B_UNK
+	#self.I_UNK = data_loader.I_UNK
 
     def forward(self, sents, char_sents, feats, bc_feats, training=True):
         raise NotImplementedError
@@ -49,7 +50,7 @@ class CRF_Model(object):
 
     def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, known_tags, training=True):
         birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, self.use_partial, known_tags, self.tag_to_id, self.B_UNK, self.I_UNK)
+        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, self.use_partial, known_tags, self.tag_to_id, self.UNK)
         return crf_loss#, sum_s, sent_s
 
     def eval(self, sents, char_sents, feats, bc_feats, training=False):
