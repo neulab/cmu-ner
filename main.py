@@ -213,7 +213,7 @@ def main(args):
     print ner_data_loader.id_to_tag
 
     if not args.data_aug:
-        sents, char_sents, tgt_tags, discrete_features, bc_features = ner_data_loader.get_data_set(args.train_path, args.lang)
+        sents, char_sents, tgt_tags, discrete_features, bc_features, morph_sents = ner_data_loader.get_data_set(args.train_path, args.lang)
     else:
         sents_tgt, char_sents_tgt, tags_tgt, dfs_tgt, bc_feats_tgt = ner_data_loader.get_data_set(args.tgt_lang_train_path, args.lang)
         sents_aug, char_sents_aug, tags_aug, dfs_aug, bc_feats_aug = ner_data_loader.get_data_set(args.aug_lang_train_path, args.aug_lang)
@@ -712,6 +712,7 @@ def init_config():
     parser.add_argument("--hidden_dim", default=200, type=int, help="token level rnn hidden dim")
     parser.add_argument("--char_hidden_dim", default=25, type=int, help="char level rnn hidden dim")
     parser.add_argument("--layer", default=1, type=int)
+    parser.add_argument("--morph_word_emb_dim", default=200, type=int)
 
     parser.add_argument("--replace_unk_rate", default=0.0, type=float, help="uses when not all words in the test data is covered by the pretrained embedding")
     parser.add_argument("--remove_singleton", default=False, action="store_true")
@@ -736,6 +737,7 @@ def init_config():
     parser.add_argument("--tgt_lang_train_path", default="../datasets/english/eng.train.bio.conll", type=str)
 
     parser.add_argument("--pretrain_emb_path", type=str, default=None)
+    parser.add_argument("--morph_emb_path", type=str, default=None)
 
     parser.add_argument("--feature_birnn_hidden_dim", default=50, type=int, action="store")
 

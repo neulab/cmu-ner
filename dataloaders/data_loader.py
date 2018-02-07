@@ -28,6 +28,7 @@ class NER_DataLoader():
         self.use_brown_cluster = args.use_brown_cluster
         self.orm_norm = args.oromo_normalize
         self.orm_lower = args.train_lowercase_oromo
+        self.morph_embedding_path = args.morph_emb_path
 
         if special_normal:
             self.orm_norm = False
@@ -50,7 +51,8 @@ class NER_DataLoader():
             print("Generating vocabs from training file ....")
             if not self.args.isLr:
                 paths_to_read = [self.train_path, self.test_path, self.dev_path]
-                self.tag_to_id, self.word_to_id, self.char_to_id = self.read_files(paths_to_read)
+                self.tag_to_id, self.word_to_id, self.char_to_id,self.morph_word_to_id = self.read_files(paths_to_read)
+
             else:
                 paths_to_read = [self.train_path]
                 setEpaths = [self.dev_path, self.test_path]
@@ -59,30 +61,40 @@ class NER_DataLoader():
             print "Size of vocab before: ", len(self.word_to_id)
             self.word_to_id['<unk>'] = len(self.word_to_id) + 1
             self.char_to_id['<unk>'] = len(self.char_to_id) + 1
+            self.morph_word_to_id['<unk>'] = len(self.morph_word_to_id) + 1
 
             self.word_to_id['<\s>'] = 0
             self.char_to_id['<pad>'] = 0
-            print "Size of vocab after: ", len(self.word_to_id)
-            pkl_dump(self.tag_to_id, self.tag_vocab_path)
-            pkl_dump(self.char_to_id, self.char_vocab_path)
-            pkl_dump(self.word_to_id, self.word_vocab_path)
+            self.morph_word_to_id['<\s>'] =0
+            print "Size of vocab after: Word ", len(self.word_to_id)
+            print "Size of vocab after: Morph ", len(self.morph_word_to_id)
+            # pkl_dump(self.tag_to_id, self.tag_vocab_path)
+            # pkl_dump(self.char_to_id, self.char_vocab_path)
+            # pkl_dump(self.word_to_id, self.word_vocab_path)
 
         self.word_padding_token = 0
         self.char_padding_token = 0
+        self.morph_padding_token = 0
 
         if self.pretrained_embedding_path is not None:
             self.pretrain_word_emb, self.word_to_id = get_pretrained_emb(self.pretrained_embedding_path,
                                                                          self.word_to_id, args.word_emb_dim)
+        if self.morph_embedding_path is not None:
+            self.pretrain_morph_word_emb, self.morph_word_to_id = get_pretrained_emb(self.pretrain_morph_word_emb,
+                                                                         self.morph_word_to_id, args.morph_word_emb_dim)
         # for char vocab and word vocab, we reserve id 0 for the eos padding, and len(vocab)-1 for the <unk>
         self.id_to_tag = {v: k for k, v in self.tag_to_id.iteritems()}
         self.id_to_word = {v: k for k, v in self.word_to_id.iteritems()}
         self.id_to_char = {v: k for k, v in self.char_to_id.iteritems()}
+        self.id_to_morph_word = {v: k for k, v in self.morph_word_to_id.iteritems()}
 
         self.ner_vocab_size = len(self.id_to_tag)
         self.word_vocab_size = len(self.id_to_word)
         self.char_vocab_size = len(self.id_to_char)
+        self.morph_vocab_size = len(self.id_to_morph_word)
 
-        print "Size of vocab after: ", len(self.word_to_id)
+        print "Size of vocab after: Word", len(self.word_to_id)
+        print "Size of vocab after: Morph_word", len(self.morph_word_to_id)
         print("NER tag num=%d, Word vocab size=%d, Char Vocab size=%d" % (self.ner_vocab_size, self.word_vocab_size, self.char_vocab_size))
 
     @staticmethod
@@ -103,6 +115,24 @@ class NER_DataLoader():
                 #word = orm_morph.best_parse(word)
                 word = ormnorm.normalize(word)
             word_dict[word] += 1
+
+    def read_one_line_for_morph(self, line, tag_set, word_dict, char_set, morph_word_dict):
+        for w in line:
+            fields = w.split()
+            morph_word = fields[0]
+            word = morph_word.split("~")[0].split(":")[1]
+            ner_tag = fields[-1]
+            for c in word:
+                char_set.add(c)
+            tag_set.add(ner_tag)
+            if self.orm_lower:
+                word = word.lower()
+            if self.orm_norm:
+                #word = orm_morph.best_parse(word)
+                word = ormnorm.normalize(word)
+            word_dict[word] += 1
+            morph_word_dict[morph_word] += 1
+
 
     def get_vocab_from_set(self, a_set, shift=0):
         vocab = {}
@@ -136,17 +166,24 @@ class NER_DataLoader():
         word_dict = defaultdict(lambda: 0)
         char_set = set()
         tag_set = set()
+        morph_dict =defaultdict(lambda:0)
 
         def _read_a_file(path):
             with codecs.open(path, "r", "utf-8") as fin:
                 to_read_line = []
                 for line in fin:
                     if line.strip() == "":
-                        self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                        if self.use_morph:
+                            self.read_one_line_for_morph(to_read_line, tag_set, word_dict, char_set, morph_dict)
+                        else:
+                            self.read_one_line(to_read_line, tag_set, word_dict, char_set)
                         to_read_line = []
                     else:
                         to_read_line.append(line.strip())
-                self.read_one_line(to_read_line, tag_set, word_dict, char_set)
+                if self.use_morph:
+                    self.read_one_line_for_morph(to_read_line, tag_set, word_dict, char_set, morph_dict)
+                else:
+                    self.read_one_line(to_read_line, tag_set, word_dict, char_set)
 
         for path in paths:
             _read_a_file(path)
@@ -154,8 +191,9 @@ class NER_DataLoader():
         tag_vocab = self.get_vocab_from_set(tag_set)
         word_vocab = self.get_vocab_from_dict(word_dict, 1, self.args.remove_singleton)
         char_vocab = self.get_vocab_from_set(char_set, 1)
+        morph_vocab = self.get_vocab_from_dict(morph_dict, 1, self.args.remove_singleton)
 
-        return tag_vocab, word_vocab, char_vocab
+        return tag_vocab, word_vocab, char_vocab, morph_vocab
 
     def read_files_lr(self, paths, setEpaths):
         # word_list = []
@@ -206,15 +244,23 @@ class NER_DataLoader():
         tgt_tags = []
         discrete_features = []
         bc_features = []
+        morph_sents = []
 
         def add_sent(one_sent):
             temp_sent = []
             temp_ner = []
             temp_char = []
             temp_bc = []
+            temp_morph = []
             for w in one_sent:
                 fields = w.split()
-                word = fields[0]
+                if self.use_morph:
+                    morph_word = fields[0]
+                    word = morph_word.split("~")[0].split(":")[1]
+                    temp_morph.append([self.morph_word_to_id[morph_word] if morph_word in self.morph_word_to_id else
+                                       self.morph_word_to_id["<unk>"]])
+                else:
+                    word = fields[0]
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
@@ -229,6 +275,7 @@ class NER_DataLoader():
                 temp_ner.append(self.tag_to_id[ner_tag])
                 temp_char.append([self.char_to_id[c] if c in self.char_to_id else self.char_to_id["<unk>"] for c in word])
 
+
             sents.append(temp_sent)
             char_sents.append(temp_char)
             tgt_tags.append(temp_ner)
@@ -237,6 +284,8 @@ class NER_DataLoader():
                 discrete_features.append([])
             else:
                 discrete_features.append(get_feature_sent(lang, one_sent, self.args) if self.use_discrete_feature else [])
+            if self.use_morph:
+                morph_sents.append(temp_morph)
 
             # print len(discrete_features[-1])
 
@@ -261,7 +310,7 @@ class NER_DataLoader():
             self.num_feats = len(discrete_features[0][0])
         else:
             self.num_feats = 0
-        return sents, char_sents, tgt_tags, discrete_features, bc_features
+        return sents, char_sents, tgt_tags, discrete_features, bc_features, morph_sents
 
     def get_lr_test(self, path, lang):
         # setE.txt

@@ -525,3 +525,122 @@ class Sep_CNN_Encoder_CRF_model(CRF_Model):
 
         return birnn_outputs
 
+class Sep_Morph_Encoder_CRF_model(CRF_Model):
+    ''' Difference with CNN_BiRnn_CRF_Model: use two BiLSTM to model the embedding features (char and word) and linguistic features respectively.
+        Run BiLSTM to concat word level and morphological level embeddings'''
+
+    def __init__(self, args, data_loader):
+        self.model = dy.Model()
+        self.args = args
+        super(Sep_Morph_Encoder_CRF_model, self).__init__(args, data_loader)
+        ner_tag_size = data_loader.ner_vocab_size
+        char_vocab_size = data_loader.char_vocab_size
+        word_vocab_size = data_loader.word_vocab_size
+        word_padding_token = data_loader.word_padding_token
+        morph_word_vocab_size = data_loader.morph_vocab_size
+        morph_padding_token = data_loader.morph_padding_token
+
+        char_emb_dim = args.char_emb_dim
+        word_emb_dim = args.word_emb_dim
+        tag_emb_dim = args.tag_emb_dim
+        morph_emb_dim = args.morph_word_emb_dim
+
+        if args.map_pretrain:
+            birnn_input_dim = args.char_hidden_dim * 2 + args.map_dim + args.cnn_filter_size
+        else:
+            birnn_input_dim = args.char_hidden_dim * 2 + args.word_emb_dim + args.cnn_filter_size + args.morph_word_emb_dim
+        hidden_dim = args.hidden_dim
+        char_hidden_dim = args.char_hidden_dim
+        src_ctx_dim = args.hidden_dim * 2
+
+        cnn_filter_size = args.cnn_filter_size
+        cnn_win_size = args.cnn_win_size
+
+        output_dropout_rate = args.output_dropout_rate
+        emb_dropout_rate = args.emb_dropout_rate
+
+        self.feature_birnn_input_dim = 0
+
+        if args.use_discrete_features:
+            self.num_feats = data_loader.num_feats
+            self.feature_encoder = Discrete_Feature_Encoder(self.model, self.num_feats, args.feature_dim)
+            self.feature_birnn_input_dim += args.feature_dim * self.num_feats
+
+        if args.use_brown_cluster:
+            bc_num = args.brown_cluster_num
+            bc_dim = args.brown_cluster_dim
+            # for each batch, the length of input seqs are the same, so we don't have bother with padding
+            self.bc_encoder = Lookup_Encoder(self.model, args, bc_num, bc_dim, word_padding_token, isFeatureEmb=True)
+            self.feature_birnn_input_dim += bc_dim
+
+        if self.feature_birnn_input_dim > 0:
+            self.feature_birnn = BiRNN_Encoder(self.model,
+                                               self.feature_birnn_input_dim,
+                                               args.feature_birnn_hidden_dim,
+                                               emb_dropout_rate=0.0,
+                                               output_dropout_rate=output_dropout_rate,
+                                               vocab_size=0)
+            src_ctx_dim += args.feature_birnn_hidden_dim * 2
+
+        self.char_cnn_encoder = CNN_Encoder(self.model, char_emb_dim, cnn_win_size, cnn_filter_size,
+                                            0.0, char_vocab_size, data_loader.char_padding_token)
+
+        self.char_birnn_encoder = BiRNN_Encoder(self.model,
+                                                char_emb_dim,
+                                                char_hidden_dim,
+                                                emb_dropout_rate=0.0,
+                                                output_dropout_rate=0.0,
+                                                vocab_size=0,
+                                                emb_size=char_emb_dim,
+                                                vocab_emb=self.char_cnn_encoder.lookup_emb)
+
+        if args.pretrain_emb_path is None:
+            self.word_lookup = Lookup_Encoder(self.model, args, word_vocab_size, word_emb_dim, word_padding_token)
+        else:
+            print "In NER CRF: Using pretrained word embedding!"
+            self.word_lookup = Lookup_Encoder(self.model, args, word_vocab_size, word_emb_dim, word_padding_token, data_loader.pretrain_word_emb)
+
+        if args.morph_emb_path is not None:
+            print "In NER CRF: Using pretrained morphological embedding!"
+            self.morph_word_lookup = Lookup_Encoder(self.model, args, morph_word_vocab_size, morph_emb_dim, morph_padding_token,
+                                              data_loader.pretrain_morph_word_emb)
+
+        #Runing a BiLSTM over word embedding and
+
+
+        self.birnn_encoder = BiRNN_Encoder(self.model,
+                                           birnn_input_dim,
+                                           hidden_dim,
+                                           emb_dropout_rate=emb_dropout_rate,
+                                           output_dropout_rate=output_dropout_rate,
+                                           vocab_size=0)
+
+        # self.crf_decoder = classifier(self.model, src_ctx_dim, ner_tag_size)
+        self.crf_decoder = chain_CRF_decoder(args, self.model, src_ctx_dim, tag_emb_dim, ner_tag_size, constraints=self.constraints)
+
+    def forward(self, sents, char_sents, feats, bc_feats, sents_with_morph, training=True):
+        char_embs_birnn = self.char_birnn_encoder.encode(char_sents, training=training, char=True)
+        char_embs_cnn = self.char_cnn_encoder.encode(char_sents, training=training, char=True)
+        word_embs = self.word_lookup.encode(sents)
+        morph_word_embs = self.morph_word_lookup.encode(sents_with_morph)
+
+        concat_inputs = [dy.concatenate([cr, cc, w, mw]) for cr, cc, w, mw in zip(char_embs_birnn, char_embs_cnn, word_embs, morph_word_embs)]
+        birnn_outputs = self.birnn_encoder.encode(concat_inputs, training=training)
+
+        if self.feature_birnn_input_dim > 0:
+            if self.args.use_discrete_features:
+                feat_embs = self.feature_encoder.encode(feats)
+                concat_inputs = feat_embs
+            if self.args.use_brown_cluster:
+                cluster_embs = self.bc_encoder.encode(bc_feats)
+                concat_inputs = cluster_embs
+
+            if self.args.use_discrete_features and self.args.use_brown_cluster:
+                concat_inputs = [dy.concatenate([fe, ce]) for fe, ce in
+                                 zip(feat_embs, cluster_embs)]
+
+            fts_birnn_outputs = self.feature_birnn.encode(concat_inputs, training=training)
+            birnn_outputs = [dy.concatenate([eb, fb]) for eb, fb in zip(birnn_outputs, fts_birnn_outputs)]
+
+        return birnn_outputs
+
