@@ -156,9 +156,9 @@ class chain_CRF_decoder(Decoder):
 		tag_vals.append(tags[index][idx])
 	    else:
 		if tags[index][idx] == B_UNK:
-		    possible_labels = ["B-LOC", "B-PER", "B-ORG", "B-GPE", "B-NAM", "O"]
+		    possible_labels = ["B-LOC", "B-PER", "B-ORG", "B-GPE",  "O"]
 		elif tags[index][idx] == I_UNK:
-		    possible_labels = ["I-LOC", "I-PER", "I-ORG", "I-GPE", "I-NAM", "O"]
+		    possible_labels = ["I-LOC", "I-PER", "I-ORG", "I-GPE",  "O"]
 
 		for pl in possible_labels:
 		    mask_idx.append(idx)
