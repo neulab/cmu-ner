@@ -1,6 +1,7 @@
 __author__ = 'chuntingzhou'
 import os
 from utils.util import *
+from utils.features import *
 
 # from utils.segnerfts import orm_morph as ormnorm
 
