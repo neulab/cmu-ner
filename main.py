@@ -293,7 +293,7 @@ def main(args):
         data_valid = data_test
 
     #Get all the data from unlabelled set
-    U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags = ner_data_loader.get_data_set(args.dev_path, args.lang)
+    U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags = ner_data_loader.get_data_set(args.unlabel_path, args.lang)
     U_data =  zip(U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags)
     qb_iterator = make_bucket_batches(U_data, args.query_batch_size)
     # print ner_data_loader.char_to_id
@@ -763,6 +763,7 @@ def init_config():
     # parser.add_argument("--train_path", default="../datasets/english/debug_train.bio", type=str)
     parser.add_argument("--dev_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--test_path", default="../datasets/english/eng.test.bio.conll", type=str)
+    parser.add_argument("--unlabel_path", default="../datasets/english/eng.dev.bio.conll", type=str)
     parser.add_argument("--save_to_path", default="../saved_models/")
     parser.add_argument("--load_from_path", default=None)
 
