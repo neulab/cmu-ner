@@ -240,7 +240,7 @@ def queryBatch(model, args,qb_iterator, id_to_word,
             break
 
         dy.renew_cg()
-        (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags) = qb_iterator[i]
+        (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags) = qb_iterator[index]
         _, TTE = model.cal_loss(U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags ,training=False)
         sent_most_informative = np.argmax(TTE.npvalue())
 
@@ -261,9 +261,9 @@ def queryBatch(model, args,qb_iterator, id_to_word,
         U_known_tags.pop(sent_most_informative)
         if len(U_sents) == 0:
             print("list empty")
-            qb_iterator.pop(i)
+            qb_iterator.pop(index)
         else:
-            qb_iterator[i] = (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags)
+            qb_iterator[index] = (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags)
 
 
         queried += 1
