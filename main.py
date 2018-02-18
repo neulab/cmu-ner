@@ -228,6 +228,48 @@ def test_on_full_setE(ner_data_loader, args, data):
                                                  args.score_file, args.setEconll, data)
     return acc, precision, recall, f1
 
+def queryBatch(model, args,qb_iterator, id_to_word,
+               sents, char_sents, tgt_tags, discrete_features, bc_features, known_tags):
+    predictions = []
+    i = 0
+    batch_nums = [i for i in range(len(qb_iterator))]
+    np.random.shuffle(batch_nums)
+    queried = 0
+    for index in batch_nums:
+        if queried >= args.query_batch_size:
+            break
+
+        dy.renew_cg()
+        (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags) = qb_iterator[i]
+        _, TTE = model.cal_loss(U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags ,training=False)
+        sent_most_informative = np.argmax(TTE.npvalue())
+
+        sentence = [id_to_word[word_id] for word_id in U_sents[sent_most_informative]]
+
+        sents.append(U_sents[sent_most_informative])
+        char_sents.append(U_char_sents[sent_most_informative])
+        tgt_tags.append(U_tgt_tags[sent_most_informative])
+        discrete_features.append(U_discrete_features[sent_most_informative])
+        bc_features.append(U_bc_feats[sent_most_informative])
+        known_tags.append(U_known_tags[sent_most_informative])
+
+        U_sents.pop(sent_most_informative)
+        U_char_sents.pop(sent_most_informative)
+        U_tgt_tags.pop(sent_most_informative)
+        U_discrete_features.pop(sent_most_informative)
+        U_bc_feats.pop(sent_most_informative)
+        U_known_tags.pop(sent_most_informative)
+        if len(U_sents) == 0:
+            print("list empty")
+            qb_iterator.pop(i)
+        else:
+            qb_iterator[i] = (U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags)
+
+
+        queried += 1
+
+
+
 def main(args):
     prefix = args.model_name + "_" + str(uid)
     print "PREFIX: ", prefix
@@ -249,6 +291,11 @@ def main(args):
         data_valid = ner_data_loader.get_lr_test(args.dev_path, args.lang)
     else:
         data_valid = data_test
+
+    #Get all the data from unlabelled set
+    U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags = ner_data_loader.get_data_set(args.dev_path, args.lang)
+    U_data =  zip(U_sents, U_char_sents, U_tgt_tags, U_discrete_features, U_bc_feats, U_known_tags)
+    qb_iterator = make_bucket_batches(U_data, args.query_batch_size)
     # print ner_data_loader.char_to_id
     print "Data set size (train): ", len(sents)
     print("Number of discrete features: ", ner_data_loader.num_feats)
@@ -305,7 +352,9 @@ def main(args):
             # _check_batch_token(b_sents, ner_data_loader.id_to_word)
             # _check_batch_token(b_ner_tags, ner_data_loader.id_to_tag)
             # _check_batch_char(b_char_sents, ner_data_loader.id_to_char)
-            loss = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats,b_known_tags, training=True)
+            loss, _ = model.cal_loss(b_sents, b_char_sents, b_ner_tags, b_feats, b_bc_feats,b_known_tags, training=True)
+
+
             loss_val = loss.value()
             cum_loss += loss_val * len(b_sents)
             tot_example += len(b_sents)
@@ -371,6 +420,9 @@ def main(args):
                     exit(0)
                 valid_history.append(f1)
         epoch += 1
+        print("Done with epoch: %d" % (epoch))
+        queryBatch(model, args, qb_iterator, ner_data_loader.id_to_word,
+                   sents, char_sents, tgt_tags, discrete_features, bc_features, known_tags)
 
     if args.isLr:
 	# Test on full SetE
@@ -746,6 +798,7 @@ def init_config():
     parser.add_argument("--init_lr", default=0.015, type=float)
     parser.add_argument("--lr_decay", default=False, action="store_true")
     parser.add_argument("--decay_rate", default=0.05, action="store", type=float)
+    parser.add_argument("--query_batch_size", default=10, type=int)
 
     parser.add_argument("--tagging_scheme", default="bio", choices=["bio", "bioes"], type=str)
 

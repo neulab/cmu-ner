@@ -1,6 +1,7 @@
 __author__ = 'chuntingzhou'
 import os
 from utils.util import *
+from utils.features import *
 
 # from utils.segnerfts import orm_morph as ormnorm
 
@@ -232,7 +233,7 @@ class NER_DataLoader():
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 
-		if "B-UNK" in ner_tag:
+		if "UNK" in ner_tag:
 		    temp_ner.append(self.B_UNK)
 		elif "I-UNK" in ner_tag:
 		    temp_ner.append(self.I_UNK)
@@ -389,6 +390,9 @@ class NER_DataLoader():
             self.num_feats = 0
 
         return sents, char_sents, discrete_features, bc_features, original_sents, doc_ids
+
+
+
 
 
 class Dataloader_Combine():

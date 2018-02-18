@@ -49,8 +49,8 @@ class CRF_Model(object):
 
     def cal_loss(self, sents, char_sents, ner_tags, feats, bc_feats, known_tags, training=True):
         birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
-        crf_loss = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, self.use_partial, known_tags, self.tag_to_id, self.B_UNK, self.I_UNK)
-        return crf_loss#, sum_s, sent_s
+        crf_loss, TTE = self.crf_decoder.decode_loss(birnn_outputs, ner_tags, self.use_partial, known_tags, self.tag_to_id, self.B_UNK, self.I_UNK)
+        return crf_loss, TTE#, sum_s, sent_s
 
     def eval(self, sents, char_sents, feats, bc_feats, training=False):
         birnn_outputs = self.forward(sents, char_sents, feats, bc_feats, training=training)
