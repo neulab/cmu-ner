@@ -233,7 +233,7 @@ class NER_DataLoader():
                     word = ormnorm.normalize(word)
                 temp_sent.append(self.word_to_id[word] if word in self.word_to_id else self.word_to_id["<unk>"])
                 
-		if "UNK" in ner_tag:
+		if "B-UNK" in ner_tag:
 		    temp_ner.append(self.B_UNK)
 		elif "I-UNK" in ner_tag:
 		    temp_ner.append(self.I_UNK)
