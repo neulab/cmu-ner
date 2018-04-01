@@ -93,10 +93,7 @@ class NER_DataLoader():
         for w in line:
             fields = w.split()
             word = fields[0]
-            # IPA Sized words: add IPA word in the dict
-            info = word.split("~")
-            word = info[1].split("ipa:")[1]
-
+            word = self.readIPA(word)
             ner_tag = fields[-1]
             for c in word:
                 char_set.add(c)
@@ -116,6 +113,11 @@ class NER_DataLoader():
             vocab[elem] = i + shift
 
         return vocab
+
+    def readIPA(self, word):
+        # IPA Sized words: add IPA word in the dict
+        info = word.split("~ipa:")
+        return info[-1]
 
     def get_vocab_from_dict(self, a_dict, shift=0, remove_singleton=False):
         vocab = {}
@@ -193,8 +195,7 @@ class NER_DataLoader():
                     for word in fields:
 
                         #Get IPA sized words
-                        info = word.split("~")
-                        word = info[1].split("ipa:")[1]
+                        word = self.readIPA(word)
 
                         for c in word:
                             char_set.add(c)
@@ -228,8 +229,7 @@ class NER_DataLoader():
                 word = fields[0]
 
                 # Get IPA sized words
-                info = word.split("~")
-                word = info[1].split("ipa:")[1]
+                word = self.readIPA(word)
 
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
@@ -293,8 +293,7 @@ class NER_DataLoader():
             for word in one_sent:
 
                 # Get IPA sized words
-                info = word.split("~")
-                word = info[1].split("ipa:")[1]
+                word = self.readIPA(word)
 
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
@@ -320,8 +319,8 @@ class NER_DataLoader():
                     add_sent(one_sent)
                     sent = []
                     for word in one_sent:
-                        word  = word.split("~")
-                        orig_word  = word[0].split("w:")[1]
+                        word  = word.split("~ipa:")
+                        orig_word = word[0].replace("w:","")
                         sent.append(orig_word)
                     original_sents.append(sent)
                 i += 1
