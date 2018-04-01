@@ -93,6 +93,10 @@ class NER_DataLoader():
         for w in line:
             fields = w.split()
             word = fields[0]
+            # IPA Sized words: add IPA word in the dict
+            info = word.split("~")
+            word = info[1].split("ipa:")[1]
+
             ner_tag = fields[-1]
             for c in word:
                 char_set.add(c)
@@ -102,6 +106,8 @@ class NER_DataLoader():
             if self.orm_norm:
                 #word = orm_morph.best_parse(word)
                 word = ormnorm.normalize(word)
+
+
             word_dict[word] += 1
 
     def get_vocab_from_set(self, a_set, shift=0):
@@ -185,6 +191,11 @@ class NER_DataLoader():
                 for line in fin:
                     fields = line.strip().split()
                     for word in fields:
+
+                        #Get IPA sized words
+                        info = word.split("~")
+                        word = info[1].split("ipa:")[1]
+
                         for c in word:
                             char_set.add(c)
                         if self.orm_lower:
@@ -215,6 +226,11 @@ class NER_DataLoader():
             for w in one_sent:
                 fields = w.split()
                 word = fields[0]
+
+                # Get IPA sized words
+                info = word.split("~")
+                word = info[1].split("ipa:")[1]
+
                 ner_tag = fields[-1]
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
@@ -275,6 +291,11 @@ class NER_DataLoader():
             temp_char = []
             temp_bc = []
             for word in one_sent:
+
+                # Get IPA sized words
+                info = word.split("~")
+                word = info[1].split("ipa:")[1]
+
                 if self.use_brown_cluster:
                     temp_bc.append(self.brown_cluster_dicts[word] if word in self.brown_cluster_dicts else self.brown_cluster_dicts["<unk>"])
                 if self.orm_lower:
@@ -297,7 +318,12 @@ class NER_DataLoader():
                 one_sent = line.rstrip().split()
                 if line:
                     add_sent(one_sent)
-                    original_sents.append(one_sent)
+                    sent = []
+                    for word in one_sent:
+                        word  = word.split("~")
+                        orig_word  = word[0].split("w:")[1]
+                        sent.append(orig_word)
+                    original_sents.append(sent)
                 i += 1
                 if i % 1000 == 0:
                     print("Processed %d testing data." % (i,))
