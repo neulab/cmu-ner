@@ -362,7 +362,7 @@ def main(args):
 			print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 
 			# post processing
-			post_process(args, best_output_fname)
+			#post_process(args, best_output_fname)
 		    else:
 			acc,precision,recall, f1 = evaluate_test(ner_data_loader, args.test_path, args.model_name)
 			results = [acc, precision, recall, f1]
@@ -377,7 +377,7 @@ def main(args):
 	results = [acc, precision, recall, f1]
 	print("Test Result: acc=%f, prec=%f, recall=%f, f1=%f" % tuple(results))
 	# post processing
-	post_process(args, best_output_fname)
+	#post_process(args, best_output_fname)
     else:
 	acc,precision,recall, f1 = evaluate_test(ner_data_loader, args.test_path, args.model_name)
 	results = [acc, precision, recall, f1]
