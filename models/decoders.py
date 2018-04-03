@@ -54,9 +54,9 @@ class chain_CRF_decoder(Decoder):
         if constraints is not None:
             init_transition_matrix = constrained_transition_init(init_transition_matrix, constraints)
         # print init_transition_matrix
-        self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
-                                                             init=dy.NumpyInitializer(init_transition_matrix))
-
+        #self.transition_matrix = model.add_lookup_parameters((tag_size, tag_size),
+        #                                                     init=dy.NumpyInitializer(init_transition_matrix))
+	self.transition_matrix = model.lookup_parameters_from_numpy(init_transition_matrix)
         self.interpolation = args.interp_crf_score
         if self.interpolation:
             self.W_weight_transition = model.add_parameters((1, tag_emb_dim))
