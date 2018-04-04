@@ -7,9 +7,9 @@ CMU-NER is a suite of software to detect Named Entities, such as people, locatio
 
 ## TODO
 
-* Projecting English and Target Language both into the same semantic space using CCA.
-* Augmenting the data set with English datasets.
-* Add indicator sparse features.
+* Cross-lingual transfer learning with cheap translation.
+* Preproduce the morphology tag features.
+* Add IPA transfer learning.
 
 ## Acknowledgements
 
